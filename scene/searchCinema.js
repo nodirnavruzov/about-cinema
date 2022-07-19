@@ -7,12 +7,12 @@ const helpButton = require('../button/help')
 const menuButton = require('../button/menu');
 const parseDataToWatchlist = require('../utils/parseDataToWatchlist');
 const Watchlist = require('../model/watchlist');
+const searchedMovie = require('../model/searchedMovieEn');
+const saveSearchedMovie = require('../utils/save_functions/saveSearchedMovie');
 require('dotenv').config()
 
 
 const searchCinemaScene = new Scenes.BaseScene('searchCinemaScene')
-
-// searchCinemaScene.use(Telegraf.log())
 
 searchCinemaScene.enter(async (ctx) => {
   try {
@@ -22,7 +22,6 @@ searchCinemaScene.enter(async (ctx) => {
     console.log('error', error)
   }
 })
-
 
 searchCinemaScene.start(async (ctx) => {
   try {
@@ -86,7 +85,6 @@ searchCinemaScene.on('text', async (ctx) => {
 })
 
 // если начинается с wl_
-
 searchCinemaScene.action(/(wl_.+)/, async (ctx) => {
   try {
     await ctx.answerCbQuery()
@@ -190,6 +188,7 @@ const filmsByName = async (ctx, name) => {
   try {
     const selectedLang = ctx.session.__language_code
     if (selectedLang === 'ru') {
+      let arrayRuMovies = []
       try {
         const options = {
           method: 'GET',
@@ -201,6 +200,7 @@ const filmsByName = async (ctx, name) => {
         };
         const foundFilms = await axios(options)
         const foundByName = foundFilms.data
+        // console.log('foundByName', foundByName)
         if (foundByName.searchFilmsCountResult) {
           const arrayFilms = []
           for (const film of foundByName.films) {
@@ -213,7 +213,9 @@ const filmsByName = async (ctx, name) => {
               url: `https://kinopoiskapiunofficial.tech/api/v2.2/films/${film.filmId}`
             };
             let result = await axios(options)
+            // console.log('result', result)
             result = result.data
+            arrayRuMovies.push(result)
             const { data } = await axios.get(`http://www.omdbapi.com/?i=${result.imdbId}&apikey=${process.env.API_KEY_OMDB}`)
             let filmObject = {}
             if (data.Response !== 'False') {
@@ -239,6 +241,8 @@ const filmsByName = async (ctx, name) => {
 
             arrayFilms.push(filmObject)
           }
+          // console.log('arrayRuMovies', arrayRuMovies)
+          saveSearchedMovie(ctx, arrayRuMovies)
           return createSkeleton(arrayFilms, selectedLang)
         }  else {
           return ctx.reply(`Фильмы с названием *${name}* не найденно! 😔` )
@@ -247,18 +251,20 @@ const filmsByName = async (ctx, name) => {
         console.log('error', error)
         return await ctx.reply(`${ctx.i18n.t('whoops')}`)
       }
+
     } else if (selectedLang === 'en') {
       try {
         const { data } = await axios.get(`http://www.omdbapi.com/?s=${name}&type=movie&apikey=${process.env.API_KEY_OMDB}`)
         if (data.Response !== 'False') {
           const foundFilms = data.Search
-          
+          // console.log('foundFilms EN', foundFilms)
           const arrayFilms = []
           for (film of foundFilms) {
             const { data } = await axios.get(`http://www.omdbapi.com/?i=${film.imdbID}&apikey=${process.env.API_KEY_OMDB}`)
+            // console.log('data EN', data)
             arrayFilms.push(data)
           } 
-          
+          saveSearchedMovie(ctx, arrayFilms)
           return createSkeleton(arrayFilms, selectedLang)
         } else {
           return ctx.reply(`Фильмы с названием *${name}* не найденно! 😔` )
@@ -268,7 +274,6 @@ const filmsByName = async (ctx, name) => {
         return await ctx.reply(`${ctx.i18n.t('whoops')}`)
       }
     }
-
   } catch (error) {
     console.log('error', error)
   }
