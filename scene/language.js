@@ -43,6 +43,10 @@ languageScene.command('popular', async (ctx) => {
   ctx.scene.enter('popularScene')
 })
 
+languageScene.command('watchlist', async (ctx) => {
+  ctx.scene.enter('watchlistScene')
+})
+
 languageScene.on('text', (ctx, next) => {
   let lang = ctx.update.message.text
   lang = lang.split(' ')[0]

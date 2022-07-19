@@ -4,7 +4,6 @@ const helpButton = require('../button/help')
 const menuButton = require('../button/menu');
 const kinopoiskPopularMovies  = require('../movies/kinopoisk/popular.json')
 const imdbPopularMovies  = require('../movies/imdb/popular.json')
-const { apiKey_imdb_api, apiKey_kinopoisk_api } = require('../config/keys')
 const { commandHandler } = require('../handler/commandHandler');
 const axios = require('axios')
 
@@ -48,6 +47,10 @@ popularScene.command('top', async (ctx) => {
 
 popularScene.command('popular', async (ctx) => {
   ctx.scene.enter('popularScene')
+})
+
+popularScene.command('watchlist', async (ctx) => {
+  ctx.scene.enter('watchlistScene')
 })
 
 popularScene.on('text', async (ctx, next) => {

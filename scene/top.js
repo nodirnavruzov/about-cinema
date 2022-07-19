@@ -45,6 +45,10 @@ topScene.command('popular', async (ctx) => {
   ctx.scene.enter('popularScene')
 })
 
+topScene.command('watchlist', async (ctx) => {
+  ctx.scene.enter('watchlistScene')
+})
+
 topScene.on('text', async (ctx, next) => {
   try {
     commandHandler(ctx, next)

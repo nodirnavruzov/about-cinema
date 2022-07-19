@@ -1,5 +1,5 @@
 const axios = require('axios')
-const { apiKey_kinopoisk_api } = require('./config/keys')
+require('dotenv').config()
 
 
 
@@ -7,7 +7,7 @@ module.exports = async () => {
   const options = {
     method: 'GET',
     headers: {
-      'X-API-KEY': apiKey_kinopoisk_api,
+      'X-API-KEY': process.env.API_KEY_KINOPOISK,
       'Content-Type': 'application/json',
     },
     url: `https://kinopoiskapiunofficial.tech/api/v2.2/films/filters`

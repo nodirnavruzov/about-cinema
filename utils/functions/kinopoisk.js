@@ -1,25 +1,21 @@
 const axios = require('axios')
-const { apiKey_kinopoisk_api } = require('../../config/keys')
 const fs = require('fs')
 const path = require('path')
+require('dotenv').config()
 
 
 
 
 async function kinopoiskGetMoviesByType(typeName) {
   const type = typeName === 'top' ? 'TOP_250_BEST_FILMS' : typeName === 'popular' ? 'TOP_100_POPULAR_FILMS' : ''
-  console.log('typeName', typeName)
-  console.log('type', type)
   if (type === undefined) return  
   let page = 1
   let allMovies = []
   for (let index = 0; index < page; index++) {
-    console.log('index', index)
-    
     const options = {
       method: 'GET',
       headers: {
-        'X-API-KEY': apiKey_kinopoisk_api,
+        'X-API-KEY': process.env.API_KEY_KINOPOISK,
         'Content-Type': 'application/json',
       },
       url: `https://kinopoiskapiunofficial.tech/api/v2.2/films/top?type=${type}&page=${page}`

@@ -1,8 +1,9 @@
 const { Telegraf, Markup, Scenes, session } = require('telegraf')
-const { token_bot } = require('./config/token')
 const logger = require('./utils/logger');
 const i18n = require('./i18n.config')
 var cron = require('node-cron');
+const mongoose = require('mongoose');
+require('dotenv').config()
 
 //scenes 
 const searchCinemaScene = require('./scene/searchCinema')
@@ -10,6 +11,7 @@ const topScene = require('./scene/top')
 const popularScene = require('./scene/popular')
 const languageScene = require('./scene/language')
 const searchByFilterScene = require('./scene/searchByFilters')
+const watchlistScene = require('./scene/watchlist')
 
 const { kinopoiskGetMoviesByType } = require('./utils/functions/kinopoisk')
 const { imdbGetMoviesByType } = require('./utils/functions/imdb')
@@ -22,13 +24,14 @@ const langButton = require('./button/lang');
 const getGenres = require('./getGenres');
 
 
-const bot = new Telegraf(token_bot)
+const bot = new Telegraf(process.env.BOT_TOKEN)
 const stage = new Scenes.Stage([
 	languageScene,
 	searchCinemaScene,
 	topScene,
 	popularScene,
 	searchByFilterScene,
+	watchlistScene,
 ]);
 
 // Важно следить за порядком обявления мидлваров 
@@ -42,6 +45,7 @@ bot.use(Telegraf.log())
 bot.telegram.setMyCommands([
   {command: 'help', description: 'Помощь'},
   {command: 'start', description: 'Приветствие'},
+  {command: 'watchlist', description: 'Мой список'},
   {command: 'lang', description: 'Язык'},
   {command: 'menu', description: 'Меню Поиска'},
   {command: 'search', description: 'Поиска фильма'},
@@ -69,8 +73,14 @@ cron.schedule('0 0 0 * * *', async () => {
   await imdbGetMoviesByType('popular')
 });
 
-bot.launch()
-bot.catch((error) => console.error('Error ===>', error))
+mongoose.connect(process.env.MONGO_URI, {useNewUrlParser: true, useUnifiedTopology: true})
+  .then(async () => {
+    console.log('MongoDb connected...')
+    await bot.launch()
+    console.log('TG Bot launched...')
+  })
+  .catch( error => console.error(error))
+
 
 // Enable graceful stop
 process.once('SIGINT', () => bot.stop('SIGINT'))

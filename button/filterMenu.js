@@ -5,8 +5,6 @@ module.exports = async (ctx) => {
   const genres = await getGenres()
   let markupArray = []
   let btnArray = []
-  console.log('Filter menu')
-  
   for (let i = 0; i < genres.length; i++) {
     const genre = genres[i];
     markupArray.push(Markup.button.callback(genre.genre, genre.id))
@@ -18,7 +16,6 @@ module.exports = async (ctx) => {
   if (markupArray.length) {
     btnArray.push(markupArray)
   }
-  console.log('btnArray', btnArray)
   return await ctx.reply('Выберите жанр', { parse_mode: 'HTML',
   ...Markup.inlineKeyboard(
     btnArray

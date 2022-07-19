@@ -1,8 +1,6 @@
 const { Markup } = require('telegraf');
 
 module.exports = async (ctx, lang) => {
-  console.log('lang', ctx.i18n.languageCode)
-  
   return await ctx.reply(ctx.i18n.t('select_menu'), Markup
   .keyboard([
     ctx.i18n.languageCode === 'ru' ? ['Подборка'] : [],

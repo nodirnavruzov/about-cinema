@@ -114,5 +114,6 @@ function createEmoji(key) {
 
 module.exports = {
   createSkeleton,
-  parseData
+  parseData,
+  addPhoto
 }

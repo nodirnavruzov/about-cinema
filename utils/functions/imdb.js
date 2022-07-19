@@ -1,15 +1,12 @@
 const axios = require('axios')
-const { apiKey_imdb_api } = require('../../config/keys')
 const fs = require('fs')
 const path = require('path')
-
+require('dotenv').config()
 
 
 
 async function imdbGetMoviesByType(typeName) {
   const type = typeName === 'top' ? 'Top250Movies' : typeName === 'popular' ? 'MostPopularMovies' : ''
-  console.log('typeName', typeName)
-  console.log('type', type)
   if (type === undefined) return  
   let allMovies = []
     const options = {
@@ -17,7 +14,7 @@ async function imdbGetMoviesByType(typeName) {
       headers: {
         'Content-Type': 'application/json',
       },
-      url: `https://imdb-api.com/en/API/${type}/${apiKey_imdb_api}`
+      url: `https://imdb-api.com/en/API/${type}/${process.env.API_KEY_IMDB}`
     };
     const { data } = await axios(options)
     
