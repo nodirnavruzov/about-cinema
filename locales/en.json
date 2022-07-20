@@ -46,5 +46,6 @@
   "add_watchlist": "Add To Watchlist",
   "successfully": "Successfully added to watchlist",
   "delete_watchlist": "Delete from Watchlist",
-  "deleted_watchlist": "Deleted from Watchlist"
+  "deleted_watchlist": "Deleted from Watchlist",
+  "more": "More"
 }
