@@ -3,8 +3,6 @@ const { commandHandler } = require('../handler/commandHandler');
 const helpButton = require('../button/help')
 const countButton = require('../button/count');
 const menuButton = require('../button/menu');
-const kinopoiskTopMovies  = require('../movies/kinopoisk/top.json')
-const imdbTopMovies  = require('../movies/imdb/top.json')
 const Imdb250 = require('../model/imdb250')
 const KpBest250 = require('../model/kpBest250')
 const skeletonTop = require('../utils/skeleton/skeletonTop');
@@ -143,7 +141,6 @@ topScene.on('text', async (ctx, next) => {
 async function getMovies(ctx) {
   try {
     const {imdb, kp} = ctx.session.top
-    // let { page, limit } = ctx.session.top.kp
     if (kp.state) {
       let count = +kp.limit  
       let limit = +kp.limit  

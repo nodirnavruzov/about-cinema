@@ -1,4 +1,4 @@
-const { Telegraf, Markup, Scenes, session } = require('telegraf')
+const { Telegraf, Scenes, session } = require('telegraf')
 const logger = require('./utils/logger');
 const mongoose = require('mongoose');
 require('dotenv').config()

@@ -33,52 +33,6 @@ function addPhoto(url) {
   
 }
 
-function createEmoji(key) {
-  // 📝📅 📊 📅 ⏳ 📜 ⚙️ ✏️ 👤 📃 📢 🏳️ 🎉 📉 📈 📊 🎬 📀 💰
-    switch (key) {
-      case 'Title':
-        return '📝'
-      case 'Year':
-        return '📅'
-      case 'Rated':
-        return '📊'
-      case 'Released':
-        return '📅'
-      case 'Runtime':
-        return '⏳'
-      case 'Genre':
-        return '📜'
-      case 'Director':
-        return '⚙️'
-      case 'Writer':
-        return '✏️'
-      case 'Actors':
-        return '👤'
-      case 'Plot':
-        return '📃'
-      case 'Language':
-        return '📢'
-      case 'Country':
-        return '🏳️'
-      case 'Awards':
-        return '🎉'
-      case 'Metascore':
-        return '📉'
-      case 'imdbRating':
-        return '📈'
-      case 'imdbVotes':
-        return '📊'
-      case 'Type':
-        return '🎬'
-      case 'DVD':
-        return '📀'
-      case 'BoxOffice':
-        return '💰'
-      default:
-        return '📝'
-    }
-  }
-
 module.exports = {
   createSkeleton,
   addPhoto

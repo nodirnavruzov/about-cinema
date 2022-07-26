@@ -4,8 +4,6 @@ const {addPhoto} = require('./skeleton')
 module.exports = (data, ctx) => {
   let mapedFilms = []
   mapedFilms = data.docs.map((film) => {
-    // const genres = film.genres.map((g) => g.genre)
-    // const countries = film.countries.map((g) => g.country)
     return {
       filmId: film.kinopoiskId,
       poster: addPhoto(film.posterUrl),

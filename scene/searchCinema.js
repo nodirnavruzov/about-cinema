@@ -75,7 +75,6 @@ searchCinemaScene.on('text', async (ctx) => {
       // eng
       result = await filmsByEnCharacters(ctx, text)
     }
-    // const result = await filmsByName(ctx, text)
     for (let i = 0; i < result.length; i++) {
       const elem = result[i];
       await sendMessage(ctx, elem)

@@ -21,12 +21,9 @@ watchlist.enter(async (ctx) => {
   }
 })
 
-
-
 watchlist.help(async (ctx) => {
   helpButton(ctx)
 })
-
 
 watchlist.start(async (ctx) => {
   try {
@@ -80,7 +77,6 @@ watchlist.action(/(wl_.+)/, async (ctx) => {
   }
 })
 
-
 // если не начинается с wl_
 watchlist.action(/^(?!wl_).*$/, async (ctx) => {
   try {
@@ -93,7 +89,6 @@ watchlist.action(/^(?!wl_).*$/, async (ctx) => {
     return await ctx.reply(`Упс! Что то пошло не так, повтори попытку позже!`)
   }
 })
-
 
 async function sendMessage(ctx, films) {
   try {
