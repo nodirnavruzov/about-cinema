@@ -2,11 +2,11 @@ const { Scenes, Markup, Telegraf } = require('telegraf');
 const axios = require('axios');
 const filterMenu = require('../button/filterMenu');
 require('dotenv').config()
-const toHtml = require('../utils/parser/moviesByGenreHTML');
-const parseDataToWatchlist = require('../utils/parseDataToWatchlist');
+const toHtml = require('../utils/skeleton/moviesByGenreHTML');
 const Watchlist = require('../model/watchlist')
-const trailer = require('../getTrailer')
+const trailer = require('../utils/functions/getTrailer')
 const { commandHandler } = require('../handler/commandHandler')
+const addToWatchlist = require('../utils/functions/addToWatchlist');
 
 
 const helpButton = require('../button/help')
@@ -27,6 +27,14 @@ searchByFilter.enter(async (ctx) => {
   return searchByFilter 
 })
 
+searchByFilter.start(async (ctx) => {
+  try {
+    await ctx.reply(`Привет ${ctx.update.message.from.first_name} 🥰 Я знаю много информацию о фильмах 🙃`)
+    await ctx.reply(`Хочешь найти информацию о фильме? /help`)
+  } catch (error) {
+    console.log('error', error)
+  }
+})
 
 searchByFilter.help(async (ctx) => {
   helpButton(ctx)
@@ -34,10 +42,6 @@ searchByFilter.help(async (ctx) => {
 
 searchByFilter.command('menu', async (ctx) => {
   menuButton(ctx)
-})
-
-searchByFilter.command('lang', async (ctx) => {
-  ctx.scene.enter('languageScene')
 })
 
 searchByFilter.command('search', async (ctx) => {
@@ -64,6 +68,18 @@ searchByFilter.on('text', async (ctx, next) => {
   }
 })
 
+searchByFilter.action('more' , async (ctx) => {
+  try {
+    await ctx.answerCbQuery()
+    const movies = await getMovies(ctx)
+    const htmlFilms = skeletonTop(movies, ctx)
+    sendMovies(htmlFilms, ctx)
+  } catch (error) {
+    console.log('error', error)
+    return await ctx.reply(`Упс! Что то пошло не так, повтори попытку позже!`)
+  }
+})
+
 searchByFilter.action(/^\d+$/ , async (ctx) => {
   try {
     await ctx.answerCbQuery()
@@ -72,75 +88,17 @@ searchByFilter.action(/^\d+$/ , async (ctx) => {
     await getMoviesByGenre(ctx)
   } catch (error) {
     console.log('error', error)
-    return await ctx.reply(`${ctx.i18n.t('whoops')}`)
+    return await ctx.reply(`Упс! Что то пошло не так, повтори попытку позже!`)
   }
 })
 
 // add to watchlist
 searchByFilter.action(/(wl_.+)/, async (ctx) => {
   try {
-    await ctx.answerCbQuery()
-    const match = ctx.match[0]
-    const userId = ctx.update.callback_query.from.id
-    const filmId = match.slice(3)
-    let parsedData
-    const hasMovie = await Watchlist.findOne({film_id: filmId})
-    if (hasMovie) {
-      if (hasMovie.status) {
-        return await ctx.reply(`${ctx.i18n.t('successfully')}`)
-      } else if(!hasMovie.status){
-        const hasMovie = await Watchlist.findOneAndUpdate({film_id: filmId}, {status: true})
-        return await ctx.reply(`${hasMovie.title} ${ctx.i18n.t('successfully')}`)
-      }
-    } else {
-      if (filmId[0] === 't') {
-        const { data } = await axios.get(`http://www.omdbapi.com/?i=${filmId}&apikey=${process.env.API_KEY_OMDB}`)
-        parsedData = parseDataToWatchlist(data, 'omdbapi')
-      } else {
-        const options = {
-          method: 'GET',
-          headers: {
-            'X-API-KEY': process.env.API_KEY_KINOPOISK,
-            'Content-Type': 'application/json',
-          },
-          url: `https://kinopoiskapiunofficial.tech/api/v2.2/films/${filmId}`
-        };
-        const foundFilms = await axios(options)
-        parsedData = parseDataToWatchlist(foundFilms.data, 'kinopoiskapiunofficial')
-      }
-      const saveResult = await Watchlist.create({...parsedData, tg_id: userId})
-      if (saveResult) {
-        return ctx.reply(`${parsedData.title} ${ctx.i18n.t('successfully')}`)
-      }
-    }
-
-    // if (!hasMovie) {
-    //   if (filmId[0] === 't') {
-    //     const { data } = await axios.get(`http://www.omdbapi.com/?i=${filmId}&apikey=${process.env.API_KEY_OMDB}`)
-    //     parsedData = parseDataToWatchlist(data, 'omdbapi')
-    //   } else {
-    //     const options = {
-    //       method: 'GET',
-    //       headers: {
-    //         'X-API-KEY': process.env.API_KEY_KINOPOISK,
-    //         'Content-Type': 'application/json',
-    //       },
-    //       url: `https://kinopoiskapiunofficial.tech/api/v2.2/films/${filmId}`
-    //     };
-    //     const foundFilms = await axios(options)
-    //     parsedData = parseDataToWatchlist(foundFilms.data, 'kinopoiskapiunofficial')
-    //   }
-    //   const saveResult = await Watchlist.create({...parsedData, tg_id: userId})
-    //   if (saveResult) {
-    //     return ctx.reply(`${parsedData.title} ${ctx.i18n.t('successfully')}`)
-    //   }
-    // } else {
-    //   return ctx.reply(`${ctx.i18n.t('successfully')}`)
-    // }
-
+    await addToWatchlist(ctx)
   } catch (error) {	
     console.log('error', error)
-    return await ctx.reply(`${ctx.i18n.t('whoops')}`)
+    return await ctx.reply(`Упс! Что то пошло не так, повтори попытку позже!`)
   }
 })
 
@@ -152,7 +110,7 @@ searchByFilter.action(/(id_.+)/, async (ctx) => {
     getMoviesByGenre(ctx)
   } catch (error) {
     console.log('error', error)
-    return await ctx.reply(`${ctx.i18n.t('whoops')}`)
+    return await ctx.reply(`Упс! Что то пошло не так, повтори попытку позже!`)
   }
 })
 
@@ -165,14 +123,13 @@ searchByFilter.action(/^(?!wl_).*$/, async (ctx) => {
     ctx.reply(url) 
   } catch (error) {
     console.log('error', error)
-    return await ctx.reply(`${ctx.i18n.t('whoops')}`)
+    return await ctx.reply(`Упс! Что то пошло не так, повтори попытку позже!`)
   }
 })
 async function getMoviesByGenre(ctx) {
   try {
     const page = ctx.session.genre.page
     const genreId = ctx.session.genre.genreId
-    console.log('GENRE ===>', ctx.session.genre)
     const options = {
       method: 'GET',
       headers: {
@@ -184,10 +141,11 @@ async function getMoviesByGenre(ctx) {
     const { data } = await axios(options)
     const parsedData = toHtml(data.items)
     ctx.session.genre.totalPages = data.totalPages
+    
     await sendMovies(ctx, parsedData)
   } catch (error){
     console.log(error)
-    return await ctx.reply(`${ctx.i18n.t('whoops')}`)
+    return await ctx.reply(`Упс! Что то пошло не так, повтори попытку позже!`)
   }
 }
 
@@ -202,18 +160,18 @@ async function sendMovies(ctx, movies) {
       if (movies.length === i + 1 && ctx.session.genre.totalPages !== ctx.session.genre.page) {
         buttons = [
           [
-            Markup.button.callback(`${ctx.i18n.t('trailer')}`, `${movie.title}`), 
-            Markup.button.callback(`${ctx.i18n.t('add_watchlist')}`, `wl_${movie.film_id}`), 
+            Markup.button.callback(`Трейлер`, `${movie.title}`), 
+            Markup.button.callback(`Добавить в список`, `wl_${movie.filmId}`), 
           ],
           [
-            Markup.button.callback(`${ctx.i18n.t('more')}`, `id_${movie.film_id}`), 
+            Markup.button.callback(`Еще`, `more`), 
           ]
         ]
       } else {
         buttons = [
           [
-            Markup.button.callback(`${ctx.i18n.t('trailer')}`, `${movie.title}`), 
-            Markup.button.callback(`${ctx.i18n.t('add_watchlist')}`, `wl_${movie.film_id}`), 
+            Markup.button.callback(`Трейлер`, `${movie.title}`), 
+            Markup.button.callback(`Добавить в список`, `wl_${movie.filmId}`), 
           ]
         ]
       }
@@ -227,11 +185,8 @@ async function sendMovies(ctx, movies) {
 
   } catch(error) {
     console.log(error)
-    return await ctx.reply(`${ctx.i18n.t('whoops')}`)
+    return await ctx.reply(`Упс! Что то пошло не так, повтори попытку позже!`)
   }
 }
 
 module.exports = searchByFilter
-
-// https://kinopoiskapiunofficial.tech/api/v2.2/films?genres=1&genres=4&genres=0&order=RATING&type=ALL&ratingFrom=0&ratingTo=10&yearFrom=1000&yearTo=3000&page=1'
-// https://kinopoiskapiunofficial.tech/api/v2.2/films?genres=1&order=RATING&type=FILM&ratingFrom=7&ratingTo=10&yearFrom=1000&yearTo=3000&page=1

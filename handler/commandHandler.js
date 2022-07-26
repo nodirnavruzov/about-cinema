@@ -2,24 +2,34 @@ module.exports.commandHandler = (ctx, next) => {
   let text = ctx.update.message.text
   text = text.toLowerCase()
   switch (text) {
-    case ctx.i18n.t('watchlist').toLowerCase():
-      // console.log('watchlist')
+    case '/watchlist':
       ctx.scene.enter('watchlistScene')
       break;
-    case ctx.i18n.t('search').toLowerCase():
-      // console.log('search')
+    case 'список просмотра':
+      ctx.scene.enter('watchlistScene')
+      break;
+    case '/search':
       ctx.scene.enter('searchCinemaScene')
       break;
-    case ctx.i18n.t('top').toLowerCase():
-      // console.log('top')
+    case 'поиск':
+      ctx.scene.enter('searchCinemaScene')
+      break;
+    case '/top':
       ctx.scene.enter('topScene')
       break;
-    case ctx.i18n.t('popular').toLowerCase():
-      // console.log('popular')
+    case 'топ':
+      ctx.scene.enter('topScene')
+      break;
+    case '/popular':
       ctx.scene.enter('popularScene')
       break;
-    case 'подборка':
-      // console.log('popular')
+    case 'популярыне':
+      ctx.scene.enter('popularScene')
+      break;
+    case '/genre':
+      ctx.scene.enter('searchByFilterScene')
+      break;
+    case 'по жанру':
       ctx.scene.enter('searchByFilterScene')
       break;
     default:

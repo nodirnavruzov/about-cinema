@@ -1,5 +1,5 @@
 const { Markup } = require('telegraf');
-const getGenres = require('../getGenres');
+const getGenres = require('../utils/functions/getGenres')
 
 module.exports = async (ctx) => {
   const genres = await getGenres()

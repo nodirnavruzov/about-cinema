@@ -1,16 +1,8 @@
 module.exports = (data, from) => {
   if (from === 'omdbapi') {
-    // film_id,
-    // title,
-    // year,
-    // genre,
-    // director,
-    // IMDB_rating,
-    // type,
-    // lang
     const arrayGenres = data.Genre.split(',')
     const film = {
-      film_id : data.imdbID,
+      filmId : data.imdbID,
       title: data.Title,
       year: data.Year,
       genre: arrayGenres,
@@ -28,7 +20,7 @@ module.exports = (data, from) => {
       arrayGenres.push(g.genre)
     })
     const film = {
-      film_id : data.kinopoiskId,
+      filmId : data.kinopoiskId,
       title: data.nameRu,
       year: data.year,
       genre: arrayGenres,

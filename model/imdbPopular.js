@@ -1,7 +1,6 @@
 const { model, Schema } = require('mongoose'); 
 
-
-const watchlistSchema = new Schema({
+const imdbPopularSchema = new Schema({
   kinopoiskId: {
     type: String
   },
@@ -38,23 +37,10 @@ const watchlistSchema = new Schema({
   posterUrlPreview: {
     type: String
   },
-  lang: {
-    type: String
-  },
-  tg_id: {
-    type: String
-  },
-  username: {
-    type: String
-  },
-  status: {
-    type: Boolean,
-    default: true
-  }
 },
-{
-  timestamps: true
-});
+{timestamps: true} 
+);
+
+module.exports = model('imdbPopular', imdbPopularSchema);
 
 
-module.exports = model('Watchlist', watchlistSchema);

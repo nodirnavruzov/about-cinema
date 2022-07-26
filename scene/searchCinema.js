@@ -1,22 +1,21 @@
 const { Scenes, Markup, Telegraf } = require('telegraf');
 const axios = require('axios')
-const { createSkeleton, parseData } = require('../utils/skeleton')
-const trailer = require('../getTrailer')
+const { createSkeleton } = require('../utils/skeleton/skeleton')
+const trailer = require('../utils/functions/getTrailer')
 const { commandHandler } = require('../handler/commandHandler')
 const helpButton = require('../button/help')
 const menuButton = require('../button/menu');
-const parseDataToWatchlist = require('../utils/parseDataToWatchlist');
 const Watchlist = require('../model/watchlist');
-const searchedMovie = require('../model/searchedMovieEn');
-const saveSearchedMovie = require('../utils/save_functions/saveSearchedMovie');
 require('dotenv').config()
+const addToWatchlist = require('../utils/functions/addToWatchlist');
+const searchedMovie = require("../model/searchedMovie");
 
 
 const searchCinemaScene = new Scenes.BaseScene('searchCinemaScene')
 
 searchCinemaScene.enter(async (ctx) => {
   try {
-    ctx.reply(`${ctx.i18n.t('enter_movie_name')}.\n${ctx.i18n.t('for_example')} ${ctx.i18n.t('iron_man')} ${ctx.i18n.t('or')} ${ctx.i18n.t('batman')}`)
+    ctx.reply(`Введи название фильма`)
     return searchCinemaScene
   } catch (error) {
     console.log('error', error)
@@ -25,8 +24,8 @@ searchCinemaScene.enter(async (ctx) => {
 
 searchCinemaScene.start(async (ctx) => {
   try {
-    await ctx.reply(`${ctx.i18n.t('hello')} ${ctx.update.message.from.first_name} 🥰 ${ctx.i18n.t('i_know_about_movie')} 🙃`)
-    await ctx.reply(`${ctx.i18n.t('you_want')} /help`)
+    await ctx.reply(`Привет ${ctx.update.message.from.first_name} 🥰 Я знаю много информацию о фильмах 🙃`)
+    await ctx.reply(`Хочешь найти информацию о фильме? /help`)
   } catch (error) {
     console.log('error', error)
   }
@@ -38,10 +37,6 @@ searchCinemaScene.help(async (ctx) => {
 
 searchCinemaScene.command('menu', async (ctx) => {
   menuButton(ctx)
-})
-
-searchCinemaScene.command('lang', async (ctx) => {
-  ctx.scene.enter('languageScene')
 })
 
 searchCinemaScene.command('search', async (ctx) => {
@@ -70,84 +65,34 @@ searchCinemaScene.on('text', async (ctx, next) => {
 
 searchCinemaScene.on('text', async (ctx) => {
   try {
-    ctx.reply(`${ctx.i18n.t('cool')} ☺️`)
+    ctx.reply(`Круто! Я Пошел искать, быстро вернусь☺️`)
     const text = ctx.update.message.text
-    const result = await filmsByName(ctx, text)
-    
+    let result
+    if (/[а-яё]/i.test(text)) {
+      // ru
+      result = await filmsByRuCharacters(ctx, text)
+    } else {
+      // eng
+      result = await filmsByEnCharacters(ctx, text)
+    }
+    // const result = await filmsByName(ctx, text)
     for (let i = 0; i < result.length; i++) {
       const elem = result[i];
       await sendMessage(ctx, elem)
     }
   } catch (error) {
     console.log('error', error)
-    return await ctx.reply(`${ctx.i18n.t('whoops')}`)
+    return await ctx.reply(`Упс! Что то пошло не так, повтори попытку позже!`)
   }
 })
 
 // если начинается с wl_
 searchCinemaScene.action(/(wl_.+)/, async (ctx) => {
   try {
-    await ctx.answerCbQuery()
-    const match = ctx.match[0]
-    const userId = ctx.update.callback_query.from.id
-    const filmId = match.slice(3)
-    let parsedData
-    let omdbData = null
-    let kinopoiskData = null
-    if (filmId[0] === 't') {
-      const result = await axios.get(`http://www.omdbapi.com/?i=${filmId}&apikey=${process.env.API_KEY_OMDB}`)
-      omdbData = result.data
-      parsedData = parseDataToWatchlist(omdbData, 'omdbapi')
-    } else {
-      const options = {
-        method: 'GET',
-        headers: {
-          'X-API-KEY': process.env.API_KEY_KINOPOISK,
-          'Content-Type': 'application/json',
-        },
-        url: `https://kinopoiskapiunofficial.tech/api/v2.2/films/${filmId}`
-      };
-      const foundFilms = await axios(options)
-      kinopoiskData = foundFilms.data
-      parsedData = parseDataToWatchlist(kinopoiskData, 'kinopoiskapiunofficial')
-    }
-    const hasMovie = await Watchlist.findOne({tg_id: userId, film_id: parsedData.film_id})
-    if (hasMovie) {
-      if (hasMovie.status) {
-        return ctx.reply(`${parsedData.title} ${ctx.i18n.t('successfully')}`)
-      } else {
-        const hasMovie = await Watchlist.findOneAndUpdate({tg_id: userId, film_id: parsedData.film_id}, {status: true})
-        return ctx.reply(`${parsedData.title} ${ctx.i18n.t('successfully')}`)
-      }
-    } else {
-      await Watchlist.create({...parsedData, tg_id: userId})
-      return ctx.reply(`${parsedData.title} ${ctx.i18n.t('successfully')}`)
-    }
-    // if (saveResult) {
-    //   return ctx.reply(`${parsedData.title} ${ctx.i18n.t('successfully')}`)
-    // }
+    await addToWatchlist(ctx)
   } catch (error) {	
     console.log('error', error)
-    return await ctx.reply(`${ctx.i18n.t('whoops')}`)
-  }
-})
-
-// если начинается с id_
-searchCinemaScene.action(/(id_.+)/, async (ctx) => {
-  try {
-    await ctx.answerCbQuery()
-    const match = ctx.match[0]
-    const filmId = match.slice(3)
-    const { data } = await axios.get(`http://www.omdbapi.com/?i=${filmId}&apikey=${process.env.API_KEY_OMDB}`)
-    
-    if (data.Response === 'False') {
-      return ctx.reply(ctx.i18n.t('no_info_abaout_movie'))
-    }
-    const parsedData = parseData(data, ctx) 
-    return await ctx.replyWithPhoto({url: parsedData.poster}, {caption: parsedData.html, parse_mode: 'HTML'})
-  } catch (error) {	
-    console.log('error', error)
-    return await ctx.reply(`${ctx.i18n.t('whoops')}`)
+    return await ctx.reply(`Упс! Что то пошло не так, повтори попытку позже!`)
   }
 })
 
@@ -160,11 +105,12 @@ searchCinemaScene.action(/^(?!id_).*$/, async (ctx) => {
     ctx.reply(url) 
   } catch (error) {
     console.log('error', error)
-    return await ctx.reply(`${ctx.i18n.t('whoops')}`)
+    return await ctx.reply(`Упс! Что то пошло не так, повтори попытку позже!`)
   }
 })
 
 async function sendMessage(ctx, elem) {
+  console.log('elem', elem)
   try {
     if (elem.title && elem.title.length > 21) {
       elem.title = elem.title.slice(0, 21)
@@ -173,9 +119,8 @@ async function sendMessage(ctx, elem) {
     ...Markup.inlineKeyboard(
       [
         [
-            Markup.button.callback(`${ctx.i18n.t('more_info')}`, `id_${elem.imdbID}`), 
-            Markup.button.callback(`${ctx.i18n.t('trailer')}`, `${elem.title}`), 
-            Markup.button.callback(`${ctx.i18n.t('add_watchlist')}`, `wl_${elem.imdbID ? elem.imdbID : elem.kinopoiskId}`), 
+            Markup.button.callback(`Трейлер`, `${elem.title}`), 
+            Markup.button.callback(`Добавить в список`, `wl_${elem.filmId}`), 
         ]
       ]
     )})
@@ -184,98 +129,83 @@ async function sendMessage(ctx, elem) {
   }
 }
 
-const filmsByName = async (ctx, name) => {
+async function filmsByEnCharacters (ctx, name) {
   try {
-    const selectedLang = ctx.session.__language_code
-    if (selectedLang === 'ru') {
-      let arrayRuMovies = []
-      try {
+  const username = ctx.update.message.from.username
+  const userId = ctx.update.message.from.id
+    
+    const { data } = await axios.get(`http://www.omdbapi.com/?s=${name}&type=movie&apikey=${process.env.API_KEY_OMDB}`)
+    if (data.Response !== 'False') {
+      const foundFilms = data.Search
+      const arrayFilms = []
+      for (film of foundFilms) {
         const options = {
           method: 'GET',
           headers: {
             'X-API-KEY': process.env.API_KEY_KINOPOISK,
             'Content-Type': 'application/json',
           },
-          url: `https://kinopoiskapiunofficial.tech/api/v2.1/films/search-by-keyword?keyword=${encodeURIComponent(name)}`
+          url: `https://kinopoiskapiunofficial.tech/api/v2.2/films?order=RATING&type=ALL&ratingFrom=0&ratingTo=10&yearFrom=1000&yearTo=3000&imdbId=${film.imdbID}&page=1`
         };
-        const foundFilms = await axios(options)
-        const foundByName = foundFilms.data
-        // console.log('foundByName', foundByName)
-        if (foundByName.searchFilmsCountResult) {
-          const arrayFilms = []
-          for (const film of foundByName.films) {
-            const options = {
-              method: 'GET',
-              headers: {
-                'X-API-KEY': process.env.API_KEY_KINOPOISK,
-                'Content-Type': 'application/json',
-              },
-              url: `https://kinopoiskapiunofficial.tech/api/v2.2/films/${film.filmId}`
-            };
-            let result = await axios(options)
-            // console.log('result', result)
-            result = result.data
-            arrayRuMovies.push(result)
-            const { data } = await axios.get(`http://www.omdbapi.com/?i=${result.imdbId}&apikey=${process.env.API_KEY_OMDB}`)
-            let filmObject = {}
-            if (data.Response !== 'False') {
-              filmObject = {
-                kinopoiskId: result.kinopoiskId,
-                posterUrl: result.posterUrl,
-                nameRu: result.nameRu,
-                year: result.year,
-                kinopoiskRating: result.ratingKinopoisk,
-                director: data.Director,
-                imdbID: data.imdbID
-              }
-            } else {
-              filmObject = {
-                kinopoiskId: result.kinopoiskId,
-                posterUrl: result.posterUrl,
-                nameRu: result.nameRu,
-                year: result.year,
-                kinopoiskRating: result.ratingKinopoisk,
-                imdbID: null
-              }    
-            }
-
-            arrayFilms.push(filmObject)
+        let result = await axios(options)
+        result = result.data.items[0]
+        if (result) { 
+          if (result.nameRu || result.nameOriginal) {
+            arrayFilms.push(result)
+            await searchedMovie.create({...result, tg_id: userId, username, keyword: name})
           }
-          // console.log('arrayRuMovies', arrayRuMovies)
-          saveSearchedMovie(ctx, arrayRuMovies)
-          return createSkeleton(arrayFilms, selectedLang)
-        }  else {
-          return ctx.reply(`Фильмы с названием *${name}* не найденно! 😔` )
         }
-      } catch (error) {
-        console.log('error', error)
-        return await ctx.reply(`${ctx.i18n.t('whoops')}`)
-      }
-
-    } else if (selectedLang === 'en') {
-      try {
-        const { data } = await axios.get(`http://www.omdbapi.com/?s=${name}&type=movie&apikey=${process.env.API_KEY_OMDB}`)
-        if (data.Response !== 'False') {
-          const foundFilms = data.Search
-          // console.log('foundFilms EN', foundFilms)
-          const arrayFilms = []
-          for (film of foundFilms) {
-            const { data } = await axios.get(`http://www.omdbapi.com/?i=${film.imdbID}&apikey=${process.env.API_KEY_OMDB}`)
-            // console.log('data EN', data)
-            arrayFilms.push(data)
-          } 
-          saveSearchedMovie(ctx, arrayFilms)
-          return createSkeleton(arrayFilms, selectedLang)
-        } else {
-          return ctx.reply(`Фильмы с названием *${name}* не найденно! 😔` )
-        }
-      } catch (error) {
-        console.log('error', error)
-        return await ctx.reply(`${ctx.i18n.t('whoops')}`)
-      }
+      } 
+      return createSkeleton(arrayFilms)
+    } else {
+      return ctx.reply(`Фильмы с названием *${name}* не найденно! 😔` )
     }
   } catch (error) {
     console.log('error', error)
+    return await ctx.reply(`Упс! Что то пошло не так, повтори попытку позже!`)
+  }
+
+
+}
+async function filmsByRuCharacters (ctx, name) {
+  const username = ctx.update.message.from.username
+  const userId = ctx.update.message.from.id
+  let arrayRuMovies = []
+  try {
+    const options = {
+      method: 'GET',
+      headers: {
+        'X-API-KEY': process.env.API_KEY_KINOPOISK,
+        'Content-Type': 'application/json',
+      },
+      url: `https://kinopoiskapiunofficial.tech/api/v2.1/films/search-by-keyword?keyword=${encodeURIComponent(name)}`
+    };
+    const foundFilms = await axios(options)
+    const foundByName = foundFilms.data
+    if (foundByName.searchFilmsCountResult) {
+      const arrayFilms = []
+      for (const film of foundByName.films) {
+        const options = {
+          method: 'GET',
+          headers: {
+            'X-API-KEY': process.env.API_KEY_KINOPOISK,
+            'Content-Type': 'application/json',
+          },
+          url: `https://kinopoiskapiunofficial.tech/api/v2.2/films/${film.filmId}`
+        };
+        let result = await axios(options)
+        result = result.data
+        arrayRuMovies.push(result)
+        // need optimization
+        await searchedMovie.create({...result, tg_id: userId, username, keyword: name})
+      }
+      return createSkeleton(arrayRuMovies)
+    }  else {
+      return ctx.reply(`Фильмы с названием *${name}* не найденно! 😔` )
+    }
+  } catch (error) {
+    console.log('error', error)
+    return await ctx.reply(`Упс! Что то пошло не так, повтори попытку позже!`)
   }
 }
 

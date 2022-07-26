@@ -1,32 +1,19 @@
 
-function createSkeleton(films, lang) {
+function createSkeleton(films) {
   let mapedFilms = []
-  if (lang === 'ru') {
     mapedFilms = films.map((film) => {
+      const genres = film.genres.map((g) => g.genre)
+      const countries = film.countries.map((g) => g.country)
       return {
-        kinopoiskId: film.kinopoiskId,
-        imdbID: film.imdbID,
+        filmId: film.kinopoiskId,
         poster: addPhoto(film.posterUrl),
         title: film.nameRu,
         year:film.year,
         html: `
-        📝 <b>Названия: ${film.nameRu}</b> \n📈 <b>Кинопоиск: ${film.kinopoiskRating}</b> \n📅 <b>Год: ${film.year}</b> \n⚙️ <b>Director: ${film.director ? film.director : 'неизвестно'}</b> 
+        📝 <b>Названия: ${film.nameRu ? film.nameRu : film.nameOriginal}</b> \n📈 <b>Кинопоиск: ${film.ratingKinopoisk}</b>\n📈 <b>IMDB: ${film.ratingImdb}</b> \n📅 <b>Год: ${film.year}</b> \n⚙️ <b>Жанр: ${genres}</b> \n🌐 <b>Страна: ${countries}</b> 
         `
       }
     })
-  } else {
-    mapedFilms = films.map((film) => {
-      return {
-          imdbID: film.imdbID,
-          poster: addPhoto(film.Poster),
-          title: film.Title,
-          year:film.Year,
-          html: `
-          📝 <b>Title: ${film.Title}</b> \n📈 <b>IMDB: ${film.imdbRating}</b> \n📅 <b>Year: ${film.Year}</b> \n⚙️ <b>Director: ${film.Director}</b> 
-          `
-      }
-    })
-  }
 
 
   return mapedFilms.sort((a, b) => {
@@ -44,26 +31,6 @@ function createSkeleton(films, lang) {
 function addPhoto(url) {
   return url.substr(0,3) === 'htt' ? url : 'https://play-lh.googleusercontent.com/8Wo6Eg3iUaLAz_tFaxGxW9QP3crthfIxXMILX84FMbQHgXHY2ewxf_lzYhpveG0iJQ'
   
-}
-
-function parseData(data, ctx) {
-  let html = ''
-  let filmObject
-  delete data.imdbID
-  delete data.Response
-  for (const key in data) {
-    const value = data[key];
-    if ((value !== 'N/A' && !Array.isArray(value)) && key !== 'Poster') {
-      html += `${createEmoji(key)} <b>${ctx.i18n.t(`${key}`)}: ${value}</b> \n` 
-    }
-  }
-
-  filmObject = {
-    poster: addPhoto(data.Poster),
-    year: data.Year,
-    html
-  }
-  return filmObject
 }
 
 function createEmoji(key) {
@@ -114,6 +81,5 @@ function createEmoji(key) {
 
 module.exports = {
   createSkeleton,
-  parseData,
   addPhoto
 }

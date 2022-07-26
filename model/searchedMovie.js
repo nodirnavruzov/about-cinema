@@ -1,7 +1,6 @@
 const { model, Schema } = require('mongoose'); 
 
-
-const watchlistSchema = new Schema({
+const searchedMovieRuSchema = new Schema({
   kinopoiskId: {
     type: String
   },
@@ -38,7 +37,7 @@ const watchlistSchema = new Schema({
   posterUrlPreview: {
     type: String
   },
-  lang: {
+  keyword: {
     type: String
   },
   tg_id: {
@@ -46,15 +45,8 @@ const watchlistSchema = new Schema({
   },
   username: {
     type: String
-  },
-  status: {
-    type: Boolean,
-    default: true
   }
-},
-{
-  timestamps: true
 });
 
+module.exports = model('ruSearchedMovie', searchedMovieRuSchema);
 
-module.exports = model('Watchlist', watchlistSchema);
