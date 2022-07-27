@@ -5,7 +5,7 @@ module.exports.commandHandler = (ctx, next) => {
     case '/watchlist':
       ctx.scene.enter('watchlistScene')
       break;
-    case 'список просмотра':
+    case 'ваш список просмотра':
       ctx.scene.enter('watchlistScene')
       break;
     case '/search':
@@ -31,6 +31,21 @@ module.exports.commandHandler = (ctx, next) => {
       break;
     case 'по жанру':
       ctx.scene.enter('searchByFilterScene')
+      break;
+    case '⚙️ настройки':
+      ctx.scene.enter('settingsScene')
+      break;
+    case 'настройки':
+      ctx.scene.enter('settingsScene')
+      break;
+    case '/settings':
+      ctx.scene.enter('settingsScene')
+      break;
+    case '/publicwl':
+      ctx.scene.enter('publicWatchlistScene')
+      break;
+    case 'публичные списки просмотров':
+      ctx.scene.enter('publicWatchlistScene')
       break;
     default:
       next()

@@ -12,9 +12,13 @@ const watchlist = new Scenes.BaseScene('watchlistScene')
 
 
 watchlist.enter(async (ctx) => {
-  const userId = ctx.update.message.from.id
-  const userWatchlist = await Watchlist.find({tg_id: userId, status: true})
-  if (userWatchlist.length) {
+  ctx.session.watchlist = {
+    page: 0,
+    limit: 5,
+  }
+  const userWatchlist = await getMovies(ctx)
+  console.log('userWatchlist', userWatchlist)
+  if (userWatchlist.total) {
     await sendMessage(ctx, userWatchlist)
   } else {
     await ctx.reply('Ваш плейлист пуст')
@@ -54,11 +58,35 @@ watchlist.command('watchlist', async (ctx) => {
   ctx.scene.enter('watchlistScene')
 })
 
+watchlist.command('publicwl', async (ctx) => {
+  ctx.scene.enter('publicWatchlistScene')
+})
+
+watchlist.command('settings', async (ctx) => {
+  ctx.scene.enter('settingsScene')
+})
+
 watchlist.on('text', async (ctx, next) => {
   try {
     commandHandler(ctx, next)
   } catch (error) {
     console.log('error', error)
+  }
+})
+
+
+watchlist.action('more', async (ctx) => {
+  try {
+    const userWatchlist = await getMovies(ctx)
+    if (userWatchlist.total) {
+      await sendMessage(ctx, userWatchlist)
+    } else {
+      await ctx.reply('Ваш плейлист закончился')
+    }
+    await ctx.answerCbQuery()
+  } catch (error) {
+    console.log('error', error)
+    return await ctx.reply(`Упс! Что то пошло не так, повтори попытку позже!`)
   }
 })
 
@@ -92,26 +120,75 @@ watchlist.action(/^(?!wl_).*$/, async (ctx) => {
 
 async function sendMessage(ctx, films) {
   try {
-    const parsed = parserToHTML(films)
+    const parsed = parserToHTML(films.docs)
     for (let i = 0; i < parsed.length; i++) {
       const film = parsed[i];
       if (film.title && film.title.length > 21) {
         film.title = film.title.slice(0, 21)
       }
-      await ctx.replyWithPhoto({url: film.poster}, { caption: film.html, parse_mode: 'HTML',
-      ...Markup.inlineKeyboard(
-        [
+      if ((films.page + 1) * films.count > films.total) {
+        buttons = [
           [
-              Markup.button.callback(`Трейлер`, `${film.title}`), 
-              Markup.button.callback(`Удалить из списка`, `wl_${film.filmId}`), 
+            Markup.button.callback(`Трейлер`, `${film.title}`), 
+            Markup.button.callback(`Удалить из списка`, `wl_${film.filmId}`), 
           ]
         ]
-      )})
+      } else {
+        if (films.docs.length === i + 1) {
+          buttons = [
+            [
+              Markup.button.callback(`Трейлер`, `${film.title}`), 
+              Markup.button.callback(`Удалить из списка`, `wl_${film.filmId}`), 
+            ],
+            [
+              Markup.button.callback(`Еще`, `more`), 
+            ]
+          ]
+        } else {
+          buttons = [
+            [
+              Markup.button.callback(`Трейлер`, `${film.title}`), 
+              Markup.button.callback(`Удалить из списка`, `wl_${film.filmId}`), 
+            ]
+          ]
+        }
+      }
+
+
+      await ctx.replyWithPhoto({url: film.poster}, { caption: film.html, parse_mode: 'HTML',
+      ...Markup.inlineKeyboard(
+        buttons
+      )
+    })
     }
   } catch (error) {
     console.log('error sendMessage', error)
   }
 }
+
+async function getMovies(ctx) {
+    const userId = ctx.update.message ? ctx.update.message.from.id : ctx.update.callback_query.from.id 
+    let count = ctx.session.watchlist.limit
+    let page = ctx.session.watchlist.page
+    var query = {
+      tg_id: userId, 
+      status: true
+    };
+    const docs = await Watchlist.find(query)
+      .sort({ createdAt: 1 })
+      .skip(page * count)
+      .limit(count)
+      .exec()
+    const totalCount = await Watchlist.countDocuments(query)
+    ctx.session.watchlist.page = ++ctx.session.watchlist.page
+    return {
+      total: totalCount,
+      page, 
+      count,
+      docs,
+    }
+}
+
 
 
 module.exports = watchlist

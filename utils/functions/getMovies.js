@@ -11,9 +11,6 @@ module.exports =  async (ctx) => {
         .limit(limit)
         .exec()
       const totalCount = await KpPopular100.estimatedDocumentCount(query)
-      if ((page + 1) * limit > totalCount) {
-        console.log('tugadi')
-      }
       ctx.session.popular.kp.page = ++ctx.session.popular.kp.page
       return {
         total: totalCount,
@@ -29,9 +26,6 @@ module.exports =  async (ctx) => {
         .limit(limit)
         .exec()
       const totalCount = await ImdbPopular.estimatedDocumentCount(query)
-      if ((page + 1) * limit > totalCount) {
-        console.log('tugadi')
-      }
       ctx.session.popular.imdb.page = ++ctx.session.popular.imdb.page
       return {
         total: totalCount,

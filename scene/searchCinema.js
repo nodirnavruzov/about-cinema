@@ -15,7 +15,7 @@ const searchCinemaScene = new Scenes.BaseScene('searchCinemaScene')
 
 searchCinemaScene.enter(async (ctx) => {
   try {
-    ctx.reply(`Введи название фильма`)
+    ctx.reply(`Введи название фильма.\nНа пример Супермен`)
     return searchCinemaScene
   } catch (error) {
     console.log('error', error)
@@ -53,6 +53,14 @@ searchCinemaScene.command('popular', async (ctx) => {
 
 searchCinemaScene.command('watchlist', async (ctx) => {
   ctx.scene.enter('watchlistScene')
+})
+
+searchCinemaScene.command('publicwl', async (ctx) => {
+  ctx.scene.enter('publicWatchlistScene')
+})
+
+searchCinemaScene.command('settings', async (ctx) => {
+  ctx.scene.enter('settingsScene')
 })
 
 searchCinemaScene.on('text', async (ctx, next) => {

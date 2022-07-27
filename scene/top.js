@@ -52,7 +52,13 @@ topScene.command('watchlist', async (ctx) => {
   ctx.scene.enter('watchlistScene')
 })
 
+topScene.command('publicwl', async (ctx) => {
+  ctx.scene.enter('publicWatchlistScene')
+})
 
+topScene.command('settings', async (ctx) => {
+  ctx.scene.enter('settingsScene')
+})
 
 topScene.on('text', async (ctx, next) => {
   try {
@@ -143,18 +149,14 @@ async function getMovies(ctx) {
     const {imdb, kp} = ctx.session.top
     if (kp.state) {
       let count = +kp.limit  
-      let limit = +kp.limit  
       let page = +kp.page  
       var query = {};
       const docs = await KpBest250.find(query)
         .sort({ createdAt: 1 })
-        .skip(page * limit)
-        .limit(limit)
+        .skip(page * count)
+        .limit(count)
         .exec()
       const totalCount = await KpBest250.estimatedDocumentCount(query)
-      if ((page + 1) * limit > totalCount) {
-        console.log('tugadi')
-      }
       ctx.session.top.kp.page = ++ctx.session.top.kp.page
       return {
         total: totalCount,
@@ -164,18 +166,14 @@ async function getMovies(ctx) {
       }
     } else {
       let count = +imdb.limit  
-      let limit = +kp.limit  
       let page = +imdb.page  
       var query = {};
       const docs = await Imdb250.find(query)
         .sort({ createdAt: 1 })
-        .skip(page * limit)
-        .limit(limit)
+        .skip(page * count)
+        .limit(count)
         .exec()
       const totalCount = await Imdb250.estimatedDocumentCount(query)
-      if ((page + 1) * limit > totalCount) {
-        console.log('tugadi')
-      }
       ctx.session.top.imdb.page = ++ctx.session.top.imdb.page
       return {
         total: totalCount,
@@ -196,23 +194,32 @@ async function sendMovies(movies, ctx) {
     if (movie.title && movie.title.length > 21) {
       movie.title = movie.title.slice(0, 21)
     }
-    if (movies.docs.length === i + 1) {
-      buttons = [
-        [
-            Markup.button.callback(`Трейлер`, `${movie.title}`), 
-            Markup.button.callback(`Добавить в список`, `wl_${movie.filmId}`), 
-        ],
-        [
-          Markup.button.callback(`Еще`, `more`), 
-        ]
-      ]
-    } else {
+    if ((movies.page + 1) * movies.limit > movies.total) {
       buttons = [
         [
           Markup.button.callback(`Трейлер`, `${movie.title}`), 
           Markup.button.callback(`Добавить в список`, `wl_${movie.filmId}`), 
         ]
       ]
+    } else {
+      if (movies.docs.length === i + 1) {
+        buttons = [
+          [
+            Markup.button.callback(`Трейлер`, `${movie.title}`), 
+            Markup.button.callback(`Добавить в список`, `wl_${movie.filmId}`), 
+          ],
+          [
+            Markup.button.callback(`Еще`, `more`), 
+          ]
+        ]
+      } else {
+        buttons = [
+          [
+            Markup.button.callback(`Трейлер`, `${movie.title}`), 
+            Markup.button.callback(`Добавить в список`, `wl_${movie.filmId}`), 
+          ]
+        ]
+      }
     }
 
     await ctx.replyWithPhoto({url: movie.poster}, { caption: movie.html, parse_mode: 'HTML',

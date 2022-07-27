@@ -60,6 +60,14 @@ searchByFilter.command('watchlist', async (ctx) => {
   ctx.scene.enter('watchlistScene')
 })
 
+searchByFilter.command('publicwl', async (ctx) => {
+  ctx.scene.enter('publicWatchlistScene')
+})
+
+searchByFilter.command('settings', async (ctx) => {
+  ctx.scene.enter('settingsScene')
+})
+
 searchByFilter.on('text', async (ctx, next) => {
   try {
     commandHandler(ctx, next)
