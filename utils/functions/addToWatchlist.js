@@ -8,12 +8,12 @@ module.exports = async (ctx) => {
     const userId = ctx.update.callback_query.from.id
     const username = ctx.update.callback_query.from.username
     const filmId = match.slice(3)
-    const hasMovie = await Watchlist.findOne({kinopoiskId: filmId})
+    const hasMovie = await Watchlist.findOne({kinopoiskId: filmId, tg_id: userId})
     if (hasMovie) {
       if (hasMovie.status) {
         return await ctx.reply(`Успешно добавлено в список просмотра`)
       } else if(!hasMovie.status){
-        const hasMovie = await Watchlist.findOneAndUpdate({filmId: filmId}, {status: true})
+        const hasMovie = await Watchlist.findOneAndUpdate({kinopoiskId: filmId, tg_id: userId}, {status: true})
         return await ctx.reply(`${hasMovie.title} Успешно добавлено в список просмотра`)
       }
     } else {
