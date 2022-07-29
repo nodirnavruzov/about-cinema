@@ -157,7 +157,7 @@ async function filmsByEnCharacters (ctx, name) {
         let result = await axios(options)
         result = result.data.items[0]
         if (result) { 
-          if (result.nameRu || result.nameOriginal) {
+          if (result.nameRu) {
             arrayFilms.push(result)
             await searchedMovie.create({...result, tg_id: userId, username, keyword: name})
           }

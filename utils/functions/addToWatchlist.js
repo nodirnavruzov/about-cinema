@@ -29,7 +29,7 @@ module.exports = async (ctx) => {
         const { data } = await axios(options)
         const saveResult = await Watchlist.create({...data, tg_id: userId, username})
         if (saveResult) {
-          return ctx.reply(`${saveResult.nameRu ? saveResult.nameRu : saveResult.nameOriginal} Успешно добавлено в список просмотра`)
+          return ctx.reply(`${saveResult.nameRu} Успешно добавлено в список просмотра`)
         }
       } else {
         const options = {
@@ -45,7 +45,7 @@ module.exports = async (ctx) => {
         data.countries = data.countries.map((g) => g.country)
         const saveResult = await Watchlist.create({...data, tg_id: userId, username})
         if (saveResult) {
-          return ctx.reply(`${saveResult.nameRu ? saveResult.nameRu : saveResult.nameOriginal} Успешно добавлено в список просмотра`)
+          return ctx.reply(`${saveResult.nameRu} Успешно добавлено в список просмотра`)
         }
       }
     }

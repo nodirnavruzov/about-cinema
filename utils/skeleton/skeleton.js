@@ -2,16 +2,18 @@
 function createSkeleton(films) {
   let mapedFilms = []
     mapedFilms = films.map((film) => {
-      const genres = film.genres.map((g) => g.genre)
-      const countries = film.countries.map((g) => g.country)
-      return {
-        filmId: film.kinopoiskId,
-        poster: addPhoto(film.posterUrl),
-        title: film.nameRu,
-        year:film.year,
-        html: `
-        📝 <b>Названия: ${film.nameRu ? film.nameRu : film.nameOriginal}</b> \n📈 <b>Кинопоиск: ${film.ratingKinopoisk}</b>\n📈 <b>IMDB: ${film.ratingImdb}</b> \n📅 <b>Год: ${film.year}</b> \n⚙️ <b>Жанр: ${genres}</b> \n🌐 <b>Страна: ${countries}</b> 
-        `
+      if (film.nameRu) {
+        const genres = film.genres.map((g) => g.genre)
+        const countries = film.countries.map((g) => g.country)
+        return {
+          filmId: film.kinopoiskId,
+          poster: addPhoto(film.posterUrl),
+          title: film.nameRu,
+          year:film.year,
+          html: `
+          📝 <b>Названия: ${film.nameRu}</b> \n📈 <b>Кинопоиск: ${film.ratingKinopoisk}</b>\n📈 <b>IMDB: ${film.ratingImdb}</b> \n📅 <b>Год: ${film.year}</b> \n⚙️ <b>Жанр: ${genres}</b> \n🌐 <b>Страна: ${countries}</b> 
+          `
+        }
       }
     })
 

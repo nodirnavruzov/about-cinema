@@ -10,9 +10,6 @@ const searchedMovieRuSchema = new Schema({
   nameRu: {
     type: String
   },
-  nameOriginal: {
-    type: String
-  },
   type: {
     type: String
   },

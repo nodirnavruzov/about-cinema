@@ -4,20 +4,31 @@ const Watchlist = require('../model/watchlist');
 const parserToHTML = require('../utils/skeleton/watchlistHTML');
 const addToWatchlist = require('../utils/functions/addToWatchlist');
 const trailer = require('../utils/functions/getTrailer')
+const menuButton = require('../button/menu');
+const helpButton = require('../button/help')
+const { commandHandler } = require('../handler/commandHandler');
+
+
 
 const publicWatchlistScene = new Scenes.BaseScene('publicWatchlistScene')
 
 publicWatchlistScene.enter(async (ctx) => {
   try {
+    const myId = ctx.update.message.from.id
     ctx.session.publicWatchlist = {
       page: 0,
       limit: 5,
       wluser: ''
     }
-    const users = await PublicWatchlist.find({status: true}, 'username tg_id').exec()
-    const list = await createList(ctx, users)
-    const html = createHTML(list)
-    await sendList(ctx, html)
+    const users = await PublicWatchlist.find({ tg_id: { $ne: myId }, status: {$eq: true} } , 'username tg_id').exec()
+    if (users.length) {
+      const list = await createList(ctx, users)
+      const html = createHTML(list)
+      await sendList(ctx, html)
+    } else {
+      await ctx.replyWithHTML('Пока никто не сделал свой плейлист публичным!\nБудьте первым зайдите в <b>НАСТРОЙКИ > ПЛЕЙЛИСТ > СДЕЛАТЬ ПУБЛИЧНЫМ</b>')
+    }
+
   } catch(error) {
     console.log(error)
   }
@@ -64,7 +75,13 @@ publicWatchlistScene.command('settings', async (ctx) => {
   ctx.scene.enter('settingsScene')
 })
 
-
+publicWatchlistScene.on('text', async (ctx, next) => {
+  try {
+    commandHandler(ctx, next)
+  } catch (error) {
+    console.log('error', error)
+  }
+})  
 
 
 publicWatchlistScene.action('more' , async (ctx) => {

@@ -1,9 +1,7 @@
 const { Scenes, Markup, Telegraf } = require('telegraf');
-const countButton = require('../button/count');
 const helpButton = require('../button/help')
 const menuButton = require('../button/menu');
 const { commandHandler } = require('../handler/commandHandler');
-const axios = require('axios')
 const mongoose = require('mongoose')
 const Imdb250 = require('../model/imdb250');
 const ImdbPopular = require('../model/imdbPopular');
@@ -13,6 +11,7 @@ const skeletonTop = require('../utils/skeleton/skeletonTop');
 const Watchlist = require('../model/watchlist');
 const addToWatchlist = require('../utils/functions/addToWatchlist');
 const trailer = require('../utils/functions/getTrailer')
+const getLink = require('../utils/functions/getLink')
 
 
 const popularScene = new Scenes.BaseScene('popularScene')
@@ -111,9 +110,23 @@ popularScene.on('text', async (ctx, next) => {
   }
 })
 
+// если начинается с link_
+popularScene.action(/(link_.+)/, async (ctx) => {
+  try {
+    await ctx.answerCbQuery()
+    const match = ctx.match[0]
+    const filmId = match.split('_')[1]
+    const result = await getLink(filmId)
+    await ctx.reply(result.link)
+  } catch (error) {	
+    console.log('error', error)
+    return await ctx.reply(`Упс! Что то пошло не так, повтори попытку позже!`)
+  }
+})
 // если начинается с wl_
 popularScene.action(/(wl_.+)/, async (ctx) => {
   try {
+    await ctx.answerCbQuery()
     await addToWatchlist(ctx)
   } catch (error) {	
     console.log('error', error)
@@ -126,8 +139,10 @@ popularScene.action('more', async (ctx) => {
   try {
     await ctx.answerCbQuery()
     const movies = await getMovies(ctx)
-    const htmlFilms = skeletonTop(movies, ctx)
-    sendMovies(htmlFilms, ctx)
+    // console.log('getMovies', movies)
+    const htmlFilms = skeletonTop(movies)
+    // console.log('htmlFilms', htmlFilms)
+    await sendMovies(htmlFilms, ctx)
   } catch (error) {
     console.log('error', error)
     return await ctx.reply(`Упс! Что то пошло не так, повтори попытку позже!`)
@@ -140,7 +155,8 @@ popularScene.action(/^(?!id_).*$/, async (ctx) => {
     await ctx.answerCbQuery()
     const filmTitle = ctx.match[0]
     const url = await trailer(filmTitle)
-    ctx.reply(url) 
+    await ctx.reply(url) 
+    await ctx.answerCbQuery()
   } catch (error) {
     console.log('error', error)
     return await ctx.reply(`Упс! Что то пошло не так, повтори попытку позже!`)
@@ -196,6 +212,7 @@ async function getMovies(ctx) {
 async function sendMovies(movies, ctx) {
   for (let i = 0; i < movies.docs.length; i++) {
     const movie = movies.docs[i];
+    // console.log('movie', movie)
     let buttons = [] 
     if (movie.title && movie.title.length > 21) {
       movie.title = movie.title.slice(0, 21)
@@ -205,6 +222,10 @@ async function sendMovies(movies, ctx) {
         [
           Markup.button.callback(`Трейлер`, `${movie.title}`), 
           Markup.button.callback(`Добавить в список`, `wl_${movie.filmId}`), 
+        ],
+        [
+          Markup.button.callback(`Смотреть`, `link_${movie.filmId}`), 
+
         ]
       ]
     } else {
@@ -215,6 +236,10 @@ async function sendMovies(movies, ctx) {
             Markup.button.callback(`Добавить в список`, `wl_${movie.filmId}`), 
           ],
           [
+          Markup.button.callback(`Смотреть`, `link_${movie.filmId}`), 
+
+          ],
+          [
             Markup.button.callback(`Еще`, `more`), 
           ]
         ]
@@ -223,24 +248,22 @@ async function sendMovies(movies, ctx) {
           [
             Markup.button.callback(`Трейлер`, `${movie.title}`), 
             Markup.button.callback(`Добавить в список`, `wl_${movie.filmId}`), 
+          ],
+          [
+          Markup.button.callback(`Смотреть`, `link_${movie.filmId}`), 
+
           ]
         ]
       }
     }
-
-
-
-
-
-
-
-
+    // console.log('sendMovies', i, movie)
     await ctx.replyWithPhoto({url: movie.poster}, { caption: movie.html, parse_mode: 'HTML',
       ...Markup.inlineKeyboard(
         buttons
       )
     })
   }
+  // console.log('sendMovies FINISH')
 }
 
 

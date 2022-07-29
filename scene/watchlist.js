@@ -1,10 +1,19 @@
 const { Scenes, Markup, Telegraf } = require('telegraf');
+const countButton = require('../button/count');
 const helpButton = require('../button/help')
 const menuButton = require('../button/menu');
 const { commandHandler } = require('../handler/commandHandler');
+const axios = require('axios')
+const mongoose = require('mongoose')
+const Imdb250 = require('../model/imdb250');
+const ImdbPopular = require('../model/imdbPopular');
+const KpBest250 = require('../model/kpBest250');
+const KpPopular100 = require('../model/kpPopular100');
+const skeletonTop = require('../utils/skeleton/skeletonTop');
 const Watchlist = require('../model/watchlist');
-const parserToHTML = require('../utils/skeleton/watchlistHTML');
+const addToWatchlist = require('../utils/functions/addToWatchlist');
 const trailer = require('../utils/functions/getTrailer')
+const getLink = require('../utils/functions/getLink')
 
 
 
@@ -97,7 +106,7 @@ watchlist.action(/(wl_.+)/, async (ctx) => {
     const match = ctx.match[0]
     const filmId = match.slice(3)
     const result = await Watchlist.findOneAndUpdate({kinopoiskId: filmId, tg_id: userId}, {status: false})
-    await ctx.reply(`${result.nameRu ? result.nameRu : result.nameOriginal} Удаленно из списка просмотра`)
+    await ctx.reply(`${result.nameRu} Удаленно из списка просмотра`)
     await ctx.answerCbQuery()
   } catch (error) {	
     console.log('error', error)

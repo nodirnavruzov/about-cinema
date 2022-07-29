@@ -10,9 +10,6 @@ const imdb250Schema = new Schema({
   nameRu: {
     type: String
   },
-  nameOriginal: {
-    type: String
-  },
   type: {
     type: String
   },

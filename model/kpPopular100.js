@@ -10,9 +10,6 @@ const kp100PopularSchema = new Schema({
   nameRu: {
     type: String
   },
-  nameOriginal: {
-    type: String
-  },
   type: {
     type: String
   },

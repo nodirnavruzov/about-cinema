@@ -2,6 +2,7 @@ const { Telegraf, Scenes, session } = require('telegraf')
 const logger = require('./utils/logger');
 const mongoose = require('mongoose');
 require('dotenv').config()
+const axios = require('axios')
 
 //scenes 
 const searchCinemaScene = require('./scene/searchCinema')
@@ -51,7 +52,6 @@ bot.start(async (ctx) => {
     await ctx.reply(`Привет ${ctx.update.message.from.first_name} 🥰 Я знаю много информацию о фильмах 🙃`)
     await ctx.reply(`Хочешь найти информацию о фильме? /help`)
     menuButton(ctx)
-    // PublicWatchlist.create()
   } catch (error) { 
     console.log('error', error)
   }
@@ -64,6 +64,9 @@ bot.on('text', async (ctx, next) => {
     console.log('error', error)
   }
 })  
+
+
+
 
 mongoose.connect(process.env.MONGO_URI, {useNewUrlParser: true, useUnifiedTopology: true})
 .then(async () => {
