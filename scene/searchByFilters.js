@@ -1,19 +1,15 @@
-const { Scenes, Markup, Telegraf } = require('telegraf');
+const { Scenes } = require('telegraf');
 const axios = require('axios');
-const filterMenu = require('../button/filterMenu');
 require('dotenv').config()
-const toHtml = require('../utils/skeleton/moviesByGenreHTML');
-const Watchlist = require('../model/watchlist')
 const trailer = require('../utils/functions/getTrailer')
 const { commandHandler } = require('../handler/commandHandler')
 const addToWatchlist = require('../utils/functions/addToWatchlist');
-
-
+const sendMovies = require('../utils/functions/sendMovies')
+const skeleton = require('../utils/skeleton/skeleton');
+const getLink = require('../utils/functions/getLink')
+const filterMenu = require('../button/filterMenu');
 const helpButton = require('../button/help')
 const menuButton = require('../button/menu');
-
-
-
 
 const searchByFilter = new Scenes.BaseScene('searchByFilterScene')
 
@@ -76,13 +72,30 @@ searchByFilter.on('text', async (ctx, next) => {
   }
 })
 
+// more movies
 searchByFilter.action('more' , async (ctx) => {
   try {
     await ctx.answerCbQuery()
-    const movies = await getMovies(ctx)
-    const htmlFilms = skeletonTop(movies, ctx)
-    sendMovies(htmlFilms, ctx)
+    ctx.session.genre.page = ++ctx.session.genre.page
+    const movies = await getMoviesByGenre(ctx)
+    const parsedData = skeleton(movies)
+    await sendMovies(ctx, parsedData)
   } catch (error) {
+    console.log('error', error)
+    return await ctx.reply(`Упс! Что то пошло не так, повтори попытку позже!`)
+  }
+})
+
+// если начинается с link_
+searchByFilter.action(/(link_.+)/, async (ctx) => {
+  try {
+    await ctx.answerCbQuery()
+    await ctx.reply('Ссылка подготавливается ⏳')
+    const match = ctx.match[0]
+    const filmId = match.split('_')[1]
+    const result = await getLink(filmId)
+    await ctx.reply(result.link)
+  } catch (error) {	
     console.log('error', error)
     return await ctx.reply(`Упс! Что то пошло не так, повтори попытку позже!`)
   }
@@ -93,7 +106,9 @@ searchByFilter.action(/^\d+$/ , async (ctx) => {
     await ctx.answerCbQuery()
     const genreId = ctx.match[0]
     ctx.session.genre.genreId = genreId
-    await getMoviesByGenre(ctx)
+    const movies = await getMoviesByGenre(ctx)
+    const parsedData = skeleton(movies)
+    await sendMovies(ctx, parsedData)
   } catch (error) {
     console.log('error', error)
     return await ctx.reply(`Упс! Что то пошло не так, повтори попытку позже!`)
@@ -105,18 +120,6 @@ searchByFilter.action(/(wl_.+)/, async (ctx) => {
   try {
     await addToWatchlist(ctx)
   } catch (error) {	
-    console.log('error', error)
-    return await ctx.reply(`Упс! Что то пошло не так, повтори попытку позже!`)
-  }
-})
-
-
-// more movies
-searchByFilter.action(/(id_.+)/, async (ctx) => {
-  try {
-    ctx.session.genre.page++
-    getMoviesByGenre(ctx)
-  } catch (error) {
     console.log('error', error)
     return await ctx.reply(`Упс! Что то пошло не так, повтори попытку позже!`)
   }
@@ -147,51 +150,16 @@ async function getMoviesByGenre(ctx) {
       url: `https://kinopoiskapiunofficial.tech/api/v2.2/films?genres=${genreId}&order=RATING&type=FILM&ratingFrom=5&ratingTo=10&yearFrom=1000&yearTo=3000&page=${page}`
     };
     const { data } = await axios(options)
-    const parsedData = toHtml(data.items)
+    // console.log('data====>', data)
     ctx.session.genre.totalPages = data.totalPages
-    
-    await sendMovies(ctx, parsedData)
-  } catch (error){
-    console.log(error)
-    return await ctx.reply(`Упс! Что то пошло не так, повтори попытку позже!`)
-  }
-}
-
-async function sendMovies(ctx, movies) {
-  try {
-    for (let i = 0; i < movies.length; i++) {
-      const movie = movies[i];
-      let buttons = [] 
-      if (movie.title && movie.title.length > 21) {
-        movie.title = movie.title.slice(0, 21)
-      }
-      if (movies.length === i + 1 && ctx.session.genre.totalPages !== ctx.session.genre.page) {
-        buttons = [
-          [
-            Markup.button.callback(`Трейлер`, `${movie.title}`), 
-            Markup.button.callback(`Добавить в список`, `wl_${movie.filmId}`), 
-          ],
-          [
-            Markup.button.callback(`Еще`, `more`), 
-          ]
-        ]
-      } else {
-        buttons = [
-          [
-            Markup.button.callback(`Трейлер`, `${movie.title}`), 
-            Markup.button.callback(`Добавить в список`, `wl_${movie.filmId}`), 
-          ]
-        ]
-      }
-
-      await ctx.replyWithPhoto({url: movie.poster}, { caption: movie.html, parse_mode: 'HTML',
-        ...Markup.inlineKeyboard(
-          buttons
-        )
-      })
+    return {
+      page: page,
+      count: data.items.length,
+      total: data.total,
+      docs: data.items
     }
 
-  } catch(error) {
+  } catch (error){
     console.log(error)
     return await ctx.reply(`Упс! Что то пошло не так, повтори попытку позже!`)
   }

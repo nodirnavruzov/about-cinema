@@ -1,19 +1,11 @@
 const { Scenes, Markup, Telegraf } = require('telegraf');
-const countButton = require('../button/count');
 const helpButton = require('../button/help')
 const menuButton = require('../button/menu');
 const { commandHandler } = require('../handler/commandHandler');
-const axios = require('axios')
-const mongoose = require('mongoose')
-const Imdb250 = require('../model/imdb250');
-const ImdbPopular = require('../model/imdbPopular');
-const KpBest250 = require('../model/kpBest250');
-const KpPopular100 = require('../model/kpPopular100');
-const skeletonTop = require('../utils/skeleton/skeletonTop');
 const Watchlist = require('../model/watchlist');
-const addToWatchlist = require('../utils/functions/addToWatchlist');
 const trailer = require('../utils/functions/getTrailer')
 const getLink = require('../utils/functions/getLink')
+const parserToHTML = require('../utils/skeleton/watchlistHTML');
 
 
 
@@ -26,7 +18,6 @@ watchlist.enter(async (ctx) => {
     limit: 5,
   }
   const userWatchlist = await getMovies(ctx)
-  console.log('userWatchlist', userWatchlist)
   if (userWatchlist.total) {
     await sendMessage(ctx, userWatchlist)
   } else {

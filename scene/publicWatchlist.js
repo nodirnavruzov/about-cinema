@@ -1,12 +1,14 @@
 const { Scenes, Markup, Telegraf } = require('telegraf');
 const PublicWatchlist = require('../model/publicWatchlist');
 const Watchlist = require('../model/watchlist');
-const parserToHTML = require('../utils/skeleton/watchlistHTML');
 const addToWatchlist = require('../utils/functions/addToWatchlist');
 const trailer = require('../utils/functions/getTrailer')
 const menuButton = require('../button/menu');
 const helpButton = require('../button/help')
 const { commandHandler } = require('../handler/commandHandler');
+const sendMovies = require('../utils/functions/sendMovies')
+const skeleton = require('../utils/skeleton/skeleton');
+const getLink = require('../utils/functions/getLink')
 
 
 
@@ -22,7 +24,7 @@ publicWatchlistScene.enter(async (ctx) => {
     }
     const users = await PublicWatchlist.find({ tg_id: { $ne: myId }, status: {$eq: true} } , 'username tg_id').exec()
     if (users.length) {
-      const list = await createList(ctx, users)
+      const list = await createList(users)
       const html = createHTML(list)
       await sendList(ctx, html)
     } else {
@@ -83,13 +85,13 @@ publicWatchlistScene.on('text', async (ctx, next) => {
   }
 })  
 
-
 publicWatchlistScene.action('more' , async (ctx) => {
   try {
     await ctx.answerCbQuery()
     let username = ctx.session.publicWatchlist.wluser
     const movies = await getMovies(ctx, username)
-    await sendMessage(ctx, movies)
+    const creatoedSkeleton = skeleton(movies)
+    await sendMovies(ctx, creatoedSkeleton)
   } catch (error) {
     console.log('error', error)
     return await ctx.reply(`Упс! Что то пошло не так, повтори попытку позже!`)
@@ -106,18 +108,33 @@ publicWatchlistScene.action(/(wl_.+)/, async (ctx) => {
     return await ctx.reply(`Упс! Что то пошло не так, повтори попытку позже!`)
   }
 })
-publicWatchlistScene.action(/^(?!id_).*$/, async (ctx) => {
+
+publicWatchlistScene.action(/(link_.+)/, async (ctx) => {
   try {
     await ctx.answerCbQuery()
-    const filmTitle = ctx.match[0]
-    const url = await trailer(filmTitle)
-    ctx.reply(url) 
-  } catch (error) {
+    await ctx.reply('Ссылка подготавливается ⏳')
+    const match = ctx.match[0]
+    const filmId = match.split('_')[1]
+    const result = await getLink(filmId)
+    await ctx.reply(result.link)
+  } catch (error) {	
     console.log('error', error)
     return await ctx.reply(`Упс! Что то пошло не так, повтори попытку позже!`)
   }
 })
 
+
+publicWatchlistScene.action(/^(?!id_).*$/, async (ctx) => {
+  try {
+    const filmTitle = ctx.match[0].split('_')
+    const url = await trailer(...filmTitle)
+    await ctx.reply(url) 
+    await ctx.answerCbQuery()
+  } catch (error) {
+    console.log('error', error)
+    return await ctx.reply(`Упс! Что то пошло не так, повтори попытку позже!`)
+  }
+})
 
 publicWatchlistScene.on('text', async (ctx) => {
   try {
@@ -125,15 +142,14 @@ publicWatchlistScene.on('text', async (ctx) => {
     username = username.substring(1)
     ctx.session.publicWatchlist.wluser = username 
     const movies = await getMovies(ctx, username)
-    await sendMessage(ctx, movies)
+    const creatoedSkeleton = skeleton(movies)
+    await sendMovies(ctx, creatoedSkeleton)
   } catch (error) {
     console.log(error)    
   }
 })
 
-
-async function createList(ctx, data) {
-  console.log('createList', data)
+async function createList(data) {
   try {
     const userArray = []
     for (let i = 0; i < data.length; i++) {
@@ -151,7 +167,6 @@ async function createList(ctx, data) {
 }
 
 function createHTML(data) {
-  console.log('createHTML', data)
   let html
   for (let i = 0; i < data.length; i++) {
     const user = data[i]
@@ -163,7 +178,6 @@ function createHTML(data) {
   }
   return html
 } 
-
 
 async function sendList(ctx, html) {
   try {
@@ -188,7 +202,6 @@ async function getMovies(ctx, username) {
       .exec()
     const totalCount = await Watchlist.countDocuments(query)
     ctx.session.publicWatchlist.page = ++ctx.session.publicWatchlist.page
-    console.log('docs totalCount', totalCount)
     return {
       total: totalCount,
       page, 
@@ -199,51 +212,5 @@ async function getMovies(ctx, username) {
     console.log(error)
   }
 }
-
-async function sendMessage(ctx, films) {
-  try {
-    const parsed = parserToHTML(films.docs)
-    for (let i = 0; i < parsed.length; i++) {
-      const film = parsed[i];
-      if ((films.page + 1) * films.limit > films.total) {
-        buttons = [
-          [
-            Markup.button.callback(`Трейлер`, `${film.title}`), 
-            Markup.button.callback(`Добавить в список`, `wl_${film.filmId}`), 
-          ]
-        ]
-      } else {
-        if (films.docs.length === i + 1) {
-          buttons = [
-            [
-              Markup.button.callback(`Трейлер`, `${film.title}`), 
-            Markup.button.callback(`Добавить в список`, `wl_${film.filmId}`), 
-            ],
-            [
-              Markup.button.callback(`Еще`, `more`), 
-            ]
-          ]
-        } else {
-          buttons = [
-            [
-              Markup.button.callback(`Трейлер`, `${film.title}`), 
-            Markup.button.callback(`Добавить в список`, `wl_${film.filmId}`), 
-            ]
-          ]
-        }
-      }
-
-
-      await ctx.replyWithPhoto({url: film.poster}, { caption: film.html, parse_mode: 'HTML',
-      ...Markup.inlineKeyboard(
-        buttons
-      )
-    })
-    }
-  } catch (error) {
-    console.log('error sendMessage', error)
-  }
-}
-
 
 module.exports = publicWatchlistScene
