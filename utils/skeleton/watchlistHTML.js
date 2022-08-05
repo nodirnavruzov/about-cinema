@@ -1,4 +1,5 @@
-const { addPhoto } = require('./skeleton')
+const addPhoto = require('../functions/addPhoto')
+
 
 module.exports = (data) => {
     const films = data.map((film) => {

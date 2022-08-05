@@ -1,14 +1,14 @@
 const { Scenes, Markup, Telegraf } = require('telegraf');
 const axios = require('axios')
-const { createSkeleton } = require('../utils/skeleton/skeleton')
 const trailer = require('../utils/functions/getTrailer')
 const { commandHandler } = require('../handler/commandHandler')
 const helpButton = require('../button/help')
 const menuButton = require('../button/menu');
-const Watchlist = require('../model/watchlist');
 require('dotenv').config()
 const addToWatchlist = require('../utils/functions/addToWatchlist');
 const searchedMovie = require("../model/searchedMovie");
+const skeleton = require('../utils/skeleton/skeleton');
+const getLink = require('../utils/functions/getLink')
 
 
 const searchCinemaScene = new Scenes.BaseScene('searchCinemaScene')
@@ -83,10 +83,8 @@ searchCinemaScene.on('text', async (ctx) => {
       // eng
       result = await filmsByEnCharacters(ctx, text)
     }
-    for (let i = 0; i < result.length; i++) {
-      const elem = result[i];
-      await sendMessage(ctx, elem)
-    }
+    await sendMessage(ctx, result)
+
   } catch (error) {
     console.log('error', error)
     return await ctx.reply(`Упс! Что то пошло не так, повтори попытку позже!`)
@@ -97,6 +95,20 @@ searchCinemaScene.on('text', async (ctx) => {
 searchCinemaScene.action(/(wl_.+)/, async (ctx) => {
   try {
     await addToWatchlist(ctx)
+  } catch (error) {	
+    console.log('error', error)
+    return await ctx.reply(`Упс! Что то пошло не так, повтори попытку позже!`)
+  }
+})
+
+searchCinemaScene.action(/(link_.+)/, async (ctx) => {
+  try {
+    await ctx.answerCbQuery()
+    await ctx.reply('Ссылка подготавливается ⏳')
+    const match = ctx.match[0]
+    const filmId = match.split('_')[1]
+    const result = await getLink(filmId)
+    await ctx.reply(result.link)
   } catch (error) {	
     console.log('error', error)
     return await ctx.reply(`Упс! Что то пошло не так, повтори попытку позже!`)
@@ -116,21 +128,29 @@ searchCinemaScene.action(/^(?!id_).*$/, async (ctx) => {
   }
 })
 
-async function sendMessage(ctx, elem) {
-  console.log('elem', elem)
+async function sendMessage(ctx, movies) {
   try {
-    if (elem.title && elem.title.length > 21) {
-      elem.title = elem.title.slice(0, 21)
-    }
-    return await ctx.replyWithPhoto({url: elem.poster}, { caption: elem.html, parse_mode: 'HTML',
-    ...Markup.inlineKeyboard(
-      [
-        [
-            Markup.button.callback(`Трейлер`, `${elem.title}`), 
-            Markup.button.callback(`Добавить в список`, `wl_${elem.filmId}`), 
-        ]
-      ]
-    )})
+    console.log('movies', movies.docs)
+    for (let i = 0; i < movies.docs.length; i++) {
+      const movie = movies.docs[i];
+      if (movie.title && movie.title.length > 21) {
+        movie.title = movie.title.slice(0, 21)
+      }
+      await ctx.replyWithPhoto({url: movie.poster}, { caption: movie.html, parse_mode: 'HTML',
+        ...Markup.inlineKeyboard(
+          [
+            [
+              Markup.button.callback(`Трейлер`, `${movie.title}_${movie.year}`), 
+              Markup.button.callback(`Добавить в список`, `wl_${movie.filmId}`), 
+            ],
+            [
+              Markup.button.callback(`Смотреть`, `link_${movie.filmId}`), 
+            ]
+          ]
+        )
+      })
+  }
+
   } catch (error) {
     console.log('error sendMessage', error)
   }
@@ -140,11 +160,16 @@ async function filmsByEnCharacters (ctx, name) {
   try {
   const username = ctx.update.message.from.username
   const userId = ctx.update.message.from.id
-    
+  let moviesObj
     const { data } = await axios.get(`http://www.omdbapi.com/?s=${name}&type=movie&apikey=${process.env.API_KEY_OMDB}`)
     if (data.Response !== 'False') {
       const foundFilms = data.Search
-      const arrayFilms = []
+      moviesObj = {
+        page:  1,
+        count: data.Search.length,
+        total: data.Search.length,
+        docs: []
+      }
       for (film of foundFilms) {
         const options = {
           method: 'GET',
@@ -158,12 +183,12 @@ async function filmsByEnCharacters (ctx, name) {
         result = result.data.items[0]
         if (result) { 
           if (result.nameRu) {
-            arrayFilms.push(result)
+            moviesObj.docs.push(result)
             await searchedMovie.create({...result, tg_id: userId, username, keyword: name})
           }
         }
       } 
-      return createSkeleton(arrayFilms)
+      return skeleton(moviesObj)
     } else {
       return ctx.reply(`Фильмы с названием *${name}* не найденно! 😔` )
     }
@@ -177,7 +202,7 @@ async function filmsByEnCharacters (ctx, name) {
 async function filmsByRuCharacters (ctx, name) {
   const username = ctx.update.message.from.username
   const userId = ctx.update.message.from.id
-  let arrayRuMovies = []
+  let moviesObj = {}
   try {
     const options = {
       method: 'GET',
@@ -189,8 +214,14 @@ async function filmsByRuCharacters (ctx, name) {
     };
     const foundFilms = await axios(options)
     const foundByName = foundFilms.data
+    moviesObj = {
+      page: foundByName.pagesCount,
+      count: foundByName.films.length,
+      total: foundByName.searchFilmsCountResult,
+      docs: []
+    }
+
     if (foundByName.searchFilmsCountResult) {
-      const arrayFilms = []
       for (const film of foundByName.films) {
         const options = {
           method: 'GET',
@@ -202,11 +233,11 @@ async function filmsByRuCharacters (ctx, name) {
         };
         let result = await axios(options)
         result = result.data
-        arrayRuMovies.push(result)
+        moviesObj.docs.push(result)
         // need optimization
         await searchedMovie.create({...result, tg_id: userId, username, keyword: name})
       }
-      return createSkeleton(arrayRuMovies)
+      return skeleton(moviesObj)
     }  else {
       return ctx.reply(`Фильмы с названием *${name}* не найденно! 😔` )
     }

@@ -27,7 +27,6 @@ module.exports = async (filmId) => {
       url: `http://localhost:8081/movie`
     };
     const result = await axios(options)
-    console.log('result', result.data)
     return result.data
   } 
   catch (error) {

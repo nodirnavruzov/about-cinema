@@ -2,20 +2,17 @@ const { Scenes, Markup, Telegraf } = require('telegraf');
 const helpButton = require('../button/help')
 const menuButton = require('../button/menu');
 const { commandHandler } = require('../handler/commandHandler');
-const mongoose = require('mongoose')
 const Imdb250 = require('../model/imdb250');
-const ImdbPopular = require('../model/imdbPopular');
 const KpBest250 = require('../model/kpBest250');
-const KpPopular100 = require('../model/kpPopular100');
-const skeletonTop = require('../utils/skeleton/skeletonTop');
-const Watchlist = require('../model/watchlist');
+const skeleton = require('../utils/skeleton/skeleton');
 const addToWatchlist = require('../utils/functions/addToWatchlist');
 const trailer = require('../utils/functions/getTrailer')
 const getLink = require('../utils/functions/getLink')
+const sendMovies = require('../utils/functions/sendMovies')
 
 
 const popularScene = new Scenes.BaseScene('popularScene')
-//finishg all
+
 popularScene.enter(async (ctx) => {
   return await ctx.reply('Выберите платформу', Markup
   .keyboard([
@@ -93,8 +90,8 @@ popularScene.on('text', async (ctx, next) => {
     ctx.session.top.imdb.state = false
     const movies = await getMovies(ctx)
     if (movies) {
-      const htmlFilms = skeletonTop(movies, ctx)
-      await sendMovies(htmlFilms, ctx)    
+      const htmlFilms = skeleton(movies, ctx)
+      await sendMovies(ctx, htmlFilms)    
     }
     
   } else if (platform === 'imdb' ) {
@@ -102,8 +99,8 @@ popularScene.on('text', async (ctx, next) => {
     ctx.session.top.kp.state = false 
     const movies = await getMovies(ctx)
     if (movies) {
-      const htmlFilms = skeletonTop(movies, ctx)
-      await sendMovies(htmlFilms, ctx)    
+      const htmlFilms = skeleton(movies, ctx)
+      await sendMovies(ctx, htmlFilms)    
     }
   } else {
     commandHandler(ctx, next)
@@ -114,6 +111,7 @@ popularScene.on('text', async (ctx, next) => {
 popularScene.action(/(link_.+)/, async (ctx) => {
   try {
     await ctx.answerCbQuery()
+    await ctx.reply('Ссылка подготавливается ⏳')
     const match = ctx.match[0]
     const filmId = match.split('_')[1]
     const result = await getLink(filmId)
@@ -123,6 +121,7 @@ popularScene.action(/(link_.+)/, async (ctx) => {
     return await ctx.reply(`Упс! Что то пошло не так, повтори попытку позже!`)
   }
 })
+
 // если начинается с wl_
 popularScene.action(/(wl_.+)/, async (ctx) => {
   try {
@@ -140,9 +139,9 @@ popularScene.action('more', async (ctx) => {
     await ctx.answerCbQuery()
     const movies = await getMovies(ctx)
     // console.log('getMovies', movies)
-    const htmlFilms = skeletonTop(movies)
+    const htmlFilms = skeleton(movies)
     // console.log('htmlFilms', htmlFilms)
-    await sendMovies(htmlFilms, ctx)
+    await sendMovies(ctx, htmlFilms)
   } catch (error) {
     console.log('error', error)
     return await ctx.reply(`Упс! Что то пошло не так, повтори попытку позже!`)
@@ -152,9 +151,8 @@ popularScene.action('more', async (ctx) => {
 // если не начинается с id_
 popularScene.action(/^(?!id_).*$/, async (ctx) => {
   try {
-    await ctx.answerCbQuery()
-    const filmTitle = ctx.match[0]
-    const url = await trailer(filmTitle)
+    const filmTitle = ctx.match[0].split('_')
+    const url = await trailer(...filmTitle)
     await ctx.reply(url) 
     await ctx.answerCbQuery()
   } catch (error) {
@@ -166,7 +164,6 @@ popularScene.action(/^(?!id_).*$/, async (ctx) => {
 async function getMovies(ctx) {
   try {
     const { imdb, kp } = ctx.session.top
-    // let { page, limit } = ctx.session.top.kp
     if (kp.state) {
       let count = +kp.limit  
       let page = +kp.page  
@@ -208,65 +205,5 @@ async function getMovies(ctx) {
     console.log(error)
   }
 }
-
-async function sendMovies(movies, ctx) {
-  for (let i = 0; i < movies.docs.length; i++) {
-    const movie = movies.docs[i];
-    // console.log('movie', movie)
-    let buttons = [] 
-    if (movie.title && movie.title.length > 21) {
-      movie.title = movie.title.slice(0, 21)
-    }
-    if ((movies.page + 1) * movies.limit > movies.total) {
-      buttons = [
-        [
-          Markup.button.callback(`Трейлер`, `${movie.title}`), 
-          Markup.button.callback(`Добавить в список`, `wl_${movie.filmId}`), 
-        ],
-        [
-          Markup.button.callback(`Смотреть`, `link_${movie.filmId}`), 
-
-        ]
-      ]
-    } else {
-      if (movies.docs.length === i + 1) {
-        buttons = [
-          [
-            Markup.button.callback(`Трейлер`, `${movie.title}`), 
-            Markup.button.callback(`Добавить в список`, `wl_${movie.filmId}`), 
-          ],
-          [
-          Markup.button.callback(`Смотреть`, `link_${movie.filmId}`), 
-
-          ],
-          [
-            Markup.button.callback(`Еще`, `more`), 
-          ]
-        ]
-      } else {
-        buttons = [
-          [
-            Markup.button.callback(`Трейлер`, `${movie.title}`), 
-            Markup.button.callback(`Добавить в список`, `wl_${movie.filmId}`), 
-          ],
-          [
-          Markup.button.callback(`Смотреть`, `link_${movie.filmId}`), 
-
-          ]
-        ]
-      }
-    }
-    // console.log('sendMovies', i, movie)
-    await ctx.replyWithPhoto({url: movie.poster}, { caption: movie.html, parse_mode: 'HTML',
-      ...Markup.inlineKeyboard(
-        buttons
-      )
-    })
-  }
-  // console.log('sendMovies FINISH')
-}
-
-
-
 
 module.exports = popularScene
