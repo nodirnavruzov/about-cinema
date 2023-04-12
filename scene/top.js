@@ -19,6 +19,9 @@ topScene.enter(async (ctx) => {
     ['Кинопоиск', 'IMDB'],
   ]).oneTime().resize())  
 })
+// topScene.enter(async (ctx) => {
+//   return await ctx.reply('Скоро')
+// })
 
 topScene.start(async (ctx) => {
   try {
@@ -39,6 +42,10 @@ topScene.command('menu', async (ctx) => {
 
 topScene.command('search', async (ctx) => {
   ctx.scene.enter('searchCinemaScene')
+})
+
+topScene.command('genre', async (ctx) => {
+  ctx.scene.enter('searchByFilterScene')
 })
 
 topScene.command('top', async (ctx) => {

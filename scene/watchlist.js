@@ -46,6 +46,10 @@ watchlist.command('search', async (ctx) => {
   ctx.scene.enter('searchCinemaScene')
 })
 
+watchlist.command('genre', async (ctx) => {
+  ctx.scene.enter('searchByFilterScene')
+})
+
 watchlist.command('top', async (ctx) => {
   ctx.scene.enter('topScene')
 })

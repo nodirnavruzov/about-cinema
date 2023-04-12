@@ -40,6 +40,7 @@ bot.telegram.setMyCommands([
   {command: 'help', description: 'Помощь'},
   {command: 'start', description: 'Приветствие'},
   {command: 'watchlist', description: 'Плейлист'},
+  {command: 'genre', description: 'Лучшие фильмы по жанрам'},
   {command: 'publicwl', description: 'Публичные плейлисы'},
   {command: 'menu', description: 'Меню Поиска'},
   {command: 'search', description: 'Поиска фильма'},

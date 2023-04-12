@@ -7,7 +7,6 @@ module.exports = (data) => {
     const arrayGenres = []
     const arrayCountry = []
     if (film.nameRu) {
-      console.log(typeof film.countries[0])
       if (typeof film.countries[0] === 'object') {
         film.genres.forEach((g) => {
           arrayGenres.push(g.genre)

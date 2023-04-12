@@ -1,5 +1,6 @@
 const { Scenes, Markup, Telegraf } = require('telegraf');
 const PublicWatchlist = require('../model/publicWatchlist');
+const menuButton = require('../button/menu');
 
 const settingsScene = new Scenes.BaseScene('settingsScene')
 
@@ -32,6 +33,11 @@ settingsScene.command('search', async (ctx) => {
   ctx.scene.enter('searchCinemaScene')
 })
 
+settingsScene.command('genre', async (ctx) => {
+  ctx.scene.enter('searchByFilterScene')
+})
+
+
 settingsScene.command('top', async (ctx) => {
   ctx.scene.enter('topScene')
 })
@@ -55,7 +61,6 @@ settingsScene.command('settings', async (ctx) => {
 settingsScene.hears('Плейлист', async (ctx) => {
   const tg_id = ctx.update.message.from.id
   const result = await PublicWatchlist.findOne({tg_id, status: true})
-  console.log('result', result)
   if (!result) {
     await ctx.replyWithHTML('<b>Выберите состояние плейлиста\nТекущая состояние: Приватный</b>', {parse_mode: 'HTML',
       ...Markup.inlineKeyboard(

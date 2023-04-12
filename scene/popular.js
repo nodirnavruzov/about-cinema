@@ -19,7 +19,9 @@ popularScene.enter(async (ctx) => {
     ['Кинопоиск', 'IMDB'],
   ]).oneTime().resize())  
 })
-
+// popularScene.enter(async (ctx) => {
+//   return await ctx.reply('Скоро')
+// })
 popularScene.start(async (ctx) => {
   try {
     await ctx.reply(`Привет ${ctx.update.message.from.first_name} 🥰 Я знаю много информацию о фильмах 🙃`)
@@ -39,6 +41,10 @@ popularScene.command('menu', async (ctx) => {
 
 popularScene.command('search', async (ctx) => {
   ctx.scene.enter('searchCinemaScene')
+})
+
+popularScene.command('genre', async (ctx) => {
+  ctx.scene.enter('searchByFilterScene')
 })
 
 popularScene.command('top', async (ctx) => {

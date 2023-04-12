@@ -11,6 +11,12 @@ const skeleton = require('../utils/skeleton/skeleton');
 const getLink = require('../utils/functions/getLink')
 
 
+const headers = {
+  'X-API-KEY': process.env.API_KEY_KINOPOISK,
+  'Content-Type': 'application/json',
+};
+
+
 const searchCinemaScene = new Scenes.BaseScene('searchCinemaScene')
 
 searchCinemaScene.enter(async (ctx) => {
@@ -41,6 +47,10 @@ searchCinemaScene.command('menu', async (ctx) => {
 
 searchCinemaScene.command('search', async (ctx) => {
   ctx.scene.enter('searchCinemaScene')
+})
+
+searchCinemaScene.command('genre', async (ctx) => {
+  ctx.scene.enter('searchByFilterScene')
 })
 
 searchCinemaScene.command('top', async (ctx) => {
@@ -130,7 +140,6 @@ searchCinemaScene.action(/^(?!id_).*$/, async (ctx) => {
 
 async function sendMessage(ctx, movies) {
   try {
-    console.log('movies', movies.docs)
     for (let i = 0; i < movies.docs.length; i++) {
       const movie = movies.docs[i];
       if (movie.title && movie.title.length > 21) {
@@ -173,10 +182,7 @@ async function filmsByEnCharacters (ctx, name) {
       for (film of foundFilms) {
         const options = {
           method: 'GET',
-          headers: {
-            'X-API-KEY': process.env.API_KEY_KINOPOISK,
-            'Content-Type': 'application/json',
-          },
+          headers,
           url: `https://kinopoiskapiunofficial.tech/api/v2.2/films?order=RATING&type=ALL&ratingFrom=0&ratingTo=10&yearFrom=1000&yearTo=3000&imdbId=${film.imdbID}&page=1`
         };
         let result = await axios(options)
@@ -206,10 +212,7 @@ async function filmsByRuCharacters (ctx, name) {
   try {
     const options = {
       method: 'GET',
-      headers: {
-        'X-API-KEY': process.env.API_KEY_KINOPOISK,
-        'Content-Type': 'application/json',
-      },
+      headers,
       url: `https://kinopoiskapiunofficial.tech/api/v2.1/films/search-by-keyword?keyword=${encodeURIComponent(name)}`
     };
     const foundFilms = await axios(options)
@@ -225,10 +228,7 @@ async function filmsByRuCharacters (ctx, name) {
       for (const film of foundByName.films) {
         const options = {
           method: 'GET',
-          headers: {
-            'X-API-KEY': process.env.API_KEY_KINOPOISK,
-            'Content-Type': 'application/json',
-          },
+          headers,
           url: `https://kinopoiskapiunofficial.tech/api/v2.2/films/${film.filmId}`
         };
         let result = await axios(options)

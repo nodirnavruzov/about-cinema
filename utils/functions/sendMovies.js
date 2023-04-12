@@ -48,7 +48,7 @@ module.exports = async (ctx, movies) => {
           ]
         }
       }
-      console.log('sendMovies', i, movie)
+      // console.log('sendMovies', i, movie)
       await ctx.replyWithPhoto({url: movie.poster}, { caption: movie.html, parse_mode: 'HTML',
         ...Markup.inlineKeyboard(
           buttons

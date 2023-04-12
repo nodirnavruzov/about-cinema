@@ -22,7 +22,7 @@ publicWatchlistScene.enter(async (ctx) => {
       limit: 5,
       wluser: ''
     }
-    const users = await PublicWatchlist.find({ tg_id: { $ne: myId }, status: {$eq: true} } , 'username tg_id').exec()
+    const users = await PublicWatchlist.find({ status: {$eq: true} } , 'username tg_id').exec()
     if (users.length) {
       const list = await createList(users)
       const html = createHTML(list)
@@ -55,6 +55,10 @@ publicWatchlistScene.command('menu', async (ctx) => {
 
 publicWatchlistScene.command('search', async (ctx) => {
   ctx.scene.enter('searchCinemaScene')
+})
+
+publicWatchlistScene.command('genre', async (ctx) => {
+  ctx.scene.enter('searchByFilterScene')
 })
 
 publicWatchlistScene.command('top', async (ctx) => {
@@ -171,9 +175,9 @@ function createHTML(data) {
   for (let i = 0; i < data.length; i++) {
     const user = data[i]
     if (html) {
-      html +=`● <b>/${user.user.username} Movies: ${user.total}</b>`
+      html +=`● <b>/${user.user.username} Фильмов: ${user.total}</b>`
     } else {
-      html =`● <b>/${user.user.username} Movies: ${user.total}</b>`
+      html =`● <b>/${user.user.username} Фильмов: ${user.total}</b>`
     }
   }
   return html

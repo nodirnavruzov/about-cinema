@@ -4,6 +4,5 @@ module.exports = (ctx) => {
     username: ctx.update.message.from.username,
     text: ctx.update.message.text
   }
-  console.log('Message ==>', info)
   return ctx
 }

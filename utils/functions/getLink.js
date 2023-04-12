@@ -2,7 +2,6 @@ const axios = require('axios')
 
 module.exports = async (filmId) => {
   try {
-    console.log(process.env['X-API-KEY'])
     const optionsMovie = {
       method: 'GET',
       headers: {
@@ -12,7 +11,6 @@ module.exports = async (filmId) => {
       url: `https://kinopoiskapiunofficial.tech/api/v2.2/films/${filmId}`
     };
     const { data } = await axios(optionsMovie)
-    console.log('data', data)
     const options = {
       method: 'POST',
       data: {

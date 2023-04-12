@@ -44,6 +44,10 @@ searchByFilter.command('search', async (ctx) => {
   ctx.scene.enter('searchCinemaScene')
 })
 
+searchByFilter.command('genre', async (ctx) => {
+  ctx.scene.enter('searchByFilterScene')
+})
+
 searchByFilter.command('top', async (ctx) => {
   ctx.scene.enter('topScene')
 })
